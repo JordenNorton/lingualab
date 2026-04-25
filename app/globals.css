@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: Arial, Helvetica, sans-serif;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  background: #f8f5ef;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  color: #20201d;
+  background:
+    linear-gradient(120deg, rgba(31, 122, 119, 0.10), transparent 28%),
+    linear-gradient(250deg, rgba(215, 92, 72, 0.10), transparent 34%),
+    #f8f5ef;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(31, 122, 119, 0.18);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+button svg {
+  pointer-events: none;
+}
+
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: rgba(31, 122, 119, 0.12);
+}
+
+::selection {
+  background: rgba(31, 122, 119, 0.22);
+}
+
+.editorial-visual {
+  background:
+    linear-gradient(135deg, rgba(31, 122, 119, 0.80), rgba(95, 124, 106, 0.68)),
+    url("https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=1200&q=80");
+  background-position: center;
+  background-size: cover;
+}
+
+.reading-text p {
+  margin-bottom: 1rem;
+  line-height: 1.85;
+}
+
+.reading-text p:last-child {
+  margin-bottom: 0;
+}
+
+.range-track::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #1f7a77;
+  border: 2px solid white;
+  box-shadow: 0 2px 8px rgba(32, 32, 29, 0.25);
+}
+
+.range-track::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #1f7a77;
+  border: 2px solid white;
+  box-shadow: 0 2px 8px rgba(32, 32, 29, 0.25);
+}
