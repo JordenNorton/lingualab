@@ -11,12 +11,21 @@ Phase 1 includes:
 - Workbook questions, fill-in-the-blank drills, writing feedback, and local progress history
 - Demo mode when `OPENAI_API_KEY` is not configured
 
+Phase 2 auth foundation includes:
+
+- Email/password signup and login with Supabase Auth
+- Server-side auth cookies via `@supabase/ssr`
+- Protected `/dashboard`
+- Logout action
+- Placeholder dashboard cards for saved lessons, attempts, and vocabulary
+
 ## Tech Stack
 
 - Next.js App Router
 - TypeScript
 - Tailwind CSS
 - OpenAI Responses API
+- Supabase Auth
 - Browser localStorage for the Phase 1 progress prototype
 
 ## Local Setup
@@ -32,9 +41,17 @@ Add your OpenAI key to `.env.local`:
 ```bash
 OPENAI_API_KEY=your_key_here
 OPENAI_MODEL=gpt-5.5
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
 ```
 
-Without an API key, the app runs in demo mode with a sample lesson.
+Without an OpenAI API key, the app runs in demo mode with a sample lesson.
+
+Auth routes:
+
+- `/signup`
+- `/login`
+- `/dashboard`
 
 ## Production
 

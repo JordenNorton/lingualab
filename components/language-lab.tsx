@@ -20,6 +20,7 @@ import {
   Sparkles,
   Wand2
 } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { TouchEvent } from "react";
 import { clsx } from "clsx";
@@ -123,7 +124,7 @@ function activateOnTouch(event: TouchEvent<HTMLButtonElement>, action: () => voi
   action();
 }
 
-export function LanguageLab() {
+export function LanguageLab({ userEmail }: { userEmail: string | null }) {
   const [request, setRequest] = useState<LessonRequest>(defaultLessonRequest);
   const [lesson, setLesson] = useState<Lesson>(demoLesson);
   const [meta, setMeta] = useState<ApiMeta>({ mode: "demo", message: "Demo lesson loaded." });
@@ -364,6 +365,21 @@ export function LanguageLab() {
           </div>
         </div>
         <div className="flex flex-wrap gap-2 text-sm">
+          {userEmail ? (
+            <Link
+              href="/dashboard"
+              className="rounded-md border border-ink/10 bg-white/70 px-3 py-2 font-medium text-ink/75 transition hover:border-lagoon/40 hover:text-lagoon"
+            >
+              Dashboard
+            </Link>
+          ) : (
+            <Link
+              href="/login"
+              className="rounded-md border border-ink/10 bg-white/70 px-3 py-2 font-medium text-ink/75 transition hover:border-lagoon/40 hover:text-lagoon"
+            >
+              Log in
+            </Link>
+          )}
           <span className="rounded-md border border-ink/10 bg-white/70 px-3 py-2 text-ink/75">
             {meta.mode === "ai" ? `AI mode ${meta.model ? `| ${meta.model}` : ""}` : "Demo mode"}
           </span>
