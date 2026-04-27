@@ -17,7 +17,8 @@ Phase 2 auth foundation includes:
 - Server-side auth cookies via `@supabase/ssr`
 - Protected `/dashboard`
 - Logout action
-- Placeholder dashboard cards for saved lessons, attempts, and vocabulary
+- Supabase-backed saved lesson storage
+- Dashboard list for saved lessons
 
 ## Tech Stack
 
@@ -52,6 +53,12 @@ Auth routes:
 - `/signup`
 - `/login`
 - `/dashboard`
+
+## Supabase Database Setup
+
+Run the SQL in `supabase/migrations/20260427220000_create_lessons.sql` from the Supabase SQL editor.
+
+This creates the `public.lessons` table and row-level security policies so each authenticated user can only read and write their own lessons.
 
 ## Production
 

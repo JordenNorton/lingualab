@@ -124,11 +124,15 @@ function activateOnTouch(event: TouchEvent<HTMLButtonElement>, action: () => voi
   action();
 }
 
-export function LanguageLab({ userEmail }: { userEmail: string | null }) {
+export function LanguageLab({ userEmail, initialLesson }: { userEmail: string | null; initialLesson: Lesson | null }) {
   const [request, setRequest] = useState<LessonRequest>(defaultLessonRequest);
-  const [lesson, setLesson] = useState<Lesson>(demoLesson);
-  const [meta, setMeta] = useState<ApiMeta>({ mode: "demo", message: "Demo lesson loaded." });
+  const [lesson, setLesson] = useState<Lesson>(initialLesson ?? demoLesson);
+  const [meta, setMeta] = useState<ApiMeta>({
+    mode: "demo",
+    message: initialLesson ? "Saved lesson loaded." : "Demo lesson loaded."
+  });
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSavingLesson, setIsSavingLesson] = useState(false);
   const [status, setStatus] = useState("");
   const [savedLessons, setSavedLessons] = useState<SavedLesson[]>([]);
   const [attempts, setAttempts] = useState<QuizAttempt[]>([]);
@@ -236,7 +240,7 @@ export function LanguageLab({ userEmail }: { userEmail: string | null }) {
     }
   }
 
-  function saveLesson() {
+  async function saveLesson() {
     const next: SavedLesson[] = [
       {
         id: lesson.id,
@@ -251,7 +255,32 @@ export function LanguageLab({ userEmail }: { userEmail: string | null }) {
 
     setSavedLessons(next);
     writeLocalStorage(savedLessonsKey, next);
-    setStatus("Lesson saved to this browser.");
+
+    if (!userEmail) {
+      setStatus("Lesson saved to this browser. Log in to save it to your account.");
+      return;
+    }
+
+    setIsSavingLesson(true);
+
+    try {
+      const response = await fetch("/api/lessons", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lesson })
+      });
+      const data = (await response.json()) as { savedLesson?: { id: string }; error?: string };
+
+      if (!response.ok || !data.savedLesson) {
+        throw new Error(data.error || "The lesson could not be saved.");
+      }
+
+      setStatus("Lesson saved to your account. You can open it from the dashboard.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "The lesson could not be saved.");
+    } finally {
+      setIsSavingLesson(false);
+    }
   }
 
   function loadSavedLesson(savedLesson: SavedLesson) {
@@ -639,10 +668,13 @@ export function LanguageLab({ userEmail }: { userEmail: string | null }) {
                 type="button"
                 className="flex h-10 items-center gap-2 rounded-md border border-ink/15 px-3 text-sm font-medium text-ink transition hover:border-lagoon/50 hover:text-lagoon"
                 onClick={saveLesson}
-                onTouchEnd={(event) => activateOnTouch(event, saveLesson)}
+                onTouchEnd={(event) => {
+                  if (!isSavingLesson) activateOnTouch(event, saveLesson);
+                }}
+                disabled={isSavingLesson}
               >
-                <Save size={16} aria-hidden="true" />
-                Save
+                {isSavingLesson ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} aria-hidden="true" />}
+                {isSavingLesson ? "Saving" : "Save"}
               </button>
               <button
                 type="button"

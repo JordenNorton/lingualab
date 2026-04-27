@@ -1,7 +1,18 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { logout } from "@/lib/auth-actions";
+import { lessonSchema } from "@/lib/schemas";
 import { createClient } from "@/lib/supabase/server";
+
+type SavedLessonRow = {
+  id: string;
+  title: string;
+  target_language: string;
+  level: string;
+  content_type: string;
+  lesson: unknown;
+  created_at: string;
+};
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -13,6 +24,19 @@ export default async function DashboardPage() {
   if (error || !user) {
     redirect("/login?message=Log in to view your dashboard.");
   }
+
+  const { data: lessons, error: lessonsError } = await supabase
+    .from("lessons")
+    .select("id, title, target_language, level, content_type, lesson, created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .returns<SavedLessonRow[]>();
+
+  const savedLessons = lessons ?? [];
+  const vocabularyCount = savedLessons.reduce((count, savedLesson) => {
+    const parsed = lessonSchema.safeParse(savedLesson.lesson);
+    return count + (parsed.success ? parsed.data.vocabulary.length : 0);
+  }, 0);
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8">
@@ -43,28 +67,55 @@ export default async function DashboardPage() {
       </header>
 
       <section className="grid gap-4 md:grid-cols-3">
-        <DashboardMetric label="Saved lessons" value="0" />
+        <DashboardMetric label="Saved lessons" value={String(savedLessons.length)} />
         <DashboardMetric label="Quiz attempts" value="0" />
-        <DashboardMetric label="Vocabulary cards" value="0" />
+        <DashboardMetric label="Vocabulary terms" value={String(vocabularyCount)} />
       </section>
 
       <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="rounded-lg border border-ink/10 bg-white p-5 shadow-soft">
           <h2 className="text-xl font-semibold text-ink">Learning history</h2>
           <p className="mt-2 text-sm text-ink/62">
-            Saved lessons and workbook attempts will appear here once we move Phase 1 progress from browser storage into
-            Supabase.
+            Saved lessons appear here as soon as you save them from the generator.
           </p>
-          <div className="mt-5 rounded-md border border-dashed border-ink/20 bg-paper/50 p-6 text-sm text-ink/55">
-            No saved lessons yet.
-          </div>
+          {lessonsError ? (
+            <div className="mt-5 rounded-md border border-coral/20 bg-coral/10 p-4 text-sm text-ink/70">
+              The lessons table is not ready yet. Run the SQL in{" "}
+              <code className="rounded bg-white px-1.5 py-0.5">supabase/migrations/20260427220000_create_lessons.sql</code>
+              , then refresh this page.
+            </div>
+          ) : savedLessons.length ? (
+            <div className="mt-5 space-y-3">
+              {savedLessons.map((savedLesson) => (
+                <Link
+                  key={savedLesson.id}
+                  href={`/?lesson=${savedLesson.id}`}
+                  className="flex flex-col gap-3 rounded-md border border-ink/10 bg-paper/55 p-4 transition hover:border-lagoon/40 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate font-semibold text-ink">{savedLesson.title}</span>
+                    <span className="mt-1 block text-sm text-ink/58">
+                      {savedLesson.target_language} | {savedLesson.level} | {formatContentType(savedLesson.content_type)}
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-sm font-medium text-lagoon">
+                    {formatDate(savedLesson.created_at)}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-5 rounded-md border border-dashed border-ink/20 bg-paper/50 p-6 text-sm text-ink/55">
+              No saved lessons yet.
+            </div>
+          )}
         </div>
 
         <aside className="rounded-lg border border-ink/10 bg-white p-5 shadow-soft">
           <h2 className="text-xl font-semibold text-ink">Next Phase 2 steps</h2>
           <ul className="mt-4 space-y-3 text-sm text-ink/68">
-            <li>- Store generated lessons against your account.</li>
-            <li>- Save vocabulary from each lesson.</li>
+            <li>- Open saved lessons from this dashboard.</li>
+            <li>- Turn saved vocabulary into review cards.</li>
             <li>- Track quiz scores and weak areas.</li>
             <li>- Add retention prompts and review scheduling.</li>
           </ul>
@@ -72,6 +123,21 @@ export default async function DashboardPage() {
       </section>
     </main>
   );
+}
+
+function formatContentType(value: string) {
+  return value
+    .split("-")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("en", {
+    day: "numeric",
+    month: "short",
+    year: "numeric"
+  }).format(new Date(value));
 }
 
 function DashboardMetric({ label, value }: { label: string; value: string }) {
