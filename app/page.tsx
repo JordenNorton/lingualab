@@ -1,5 +1,5 @@
 import { LanguageLab } from "@/components/language-lab";
-import { lessonSchema } from "@/lib/schemas";
+import { lessonSchema, quizAttemptSchema, type QuizAttempt } from "@/lib/schemas";
 import { createClient } from "@/lib/supabase/server";
 
 type HomePageProps = {
@@ -7,6 +7,28 @@ type HomePageProps = {
     lesson?: string;
   }>;
 };
+
+type LessonAttemptRow = {
+  lesson_key: string;
+  title: string;
+  target_language: string;
+  level: string;
+  score: number;
+  created_at: string;
+};
+
+function parseLessonAttempt(row: LessonAttemptRow): QuizAttempt | null {
+  const parsed = quizAttemptSchema.safeParse({
+    lessonId: row.lesson_key,
+    title: row.title,
+    targetLanguage: row.target_language,
+    level: row.level,
+    score: row.score,
+    createdAt: row.created_at
+  });
+
+  return parsed.success ? parsed.data : null;
+}
 
 export default async function Home({ searchParams }: HomePageProps) {
   const supabase = await createClient();
@@ -16,6 +38,7 @@ export default async function Home({ searchParams }: HomePageProps) {
   const { lesson: savedLessonId } = await searchParams;
 
   let initialLesson = null;
+  let initialAttempts: QuizAttempt[] = [];
 
   if (user && savedLessonId) {
     const { data } = await supabase
@@ -29,5 +52,20 @@ export default async function Home({ searchParams }: HomePageProps) {
     initialLesson = parsed.success ? parsed.data : null;
   }
 
-  return <LanguageLab userEmail={user?.email ?? null} initialLesson={initialLesson} />;
+  if (user) {
+    const { data } = await supabase
+      .from("lesson_attempts")
+      .select("lesson_key, title, target_language, level, score, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(20)
+      .returns<LessonAttemptRow[]>();
+
+    initialAttempts = (data ?? []).flatMap((row) => {
+      const attempt = parseLessonAttempt(row);
+      return attempt ? [attempt] : [];
+    });
+  }
+
+  return <LanguageLab userEmail={user?.email ?? null} initialLesson={initialLesson} initialAttempts={initialAttempts} />;
 }

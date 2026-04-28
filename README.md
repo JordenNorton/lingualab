@@ -12,7 +12,7 @@ AI-generated reading practice for language learners.
 - [x] Vocabulary and grammar notes
 - [x] Workbook questions and fill-in-the-blank drills
 - [x] Writing feedback
-- [x] Local saved lessons and quiz attempt history via browser `localStorage`
+- [x] Local saved lessons and logged-out demo attempt history via browser `localStorage`
 - [x] Demo mode when `OPENAI_API_KEY` is not configured
 
 ### Phase 2: Auth And Saved Lessons
@@ -30,7 +30,7 @@ AI-generated reading practice for language learners.
 
 ### Phase 3: Progress And Review
 
-- [ ] Move quiz attempts from browser `localStorage` into Supabase
+- [x] Move quiz attempts from browser `localStorage` into Supabase
 - [ ] Store writing feedback history per user
 - [ ] Add `profiles` for user language preferences and current level
 - [ ] Add `vocabulary_items` for saved terms and review state
@@ -44,8 +44,8 @@ AI-generated reading practice for language learners.
 - Tailwind CSS
 - OpenAI Responses API
 - Supabase Auth
-- Supabase Postgres with row-level security for saved lessons
-- Browser `localStorage` for the remaining progress prototype
+- Supabase Postgres with row-level security for saved lessons and quiz attempts
+- Browser `localStorage` for logged-out demo progress fallback
 
 ## Local Setup
 
@@ -74,9 +74,9 @@ Auth routes:
 
 ## Supabase Database Setup
 
-Run the SQL in `supabase/migrations/20260427220000_create_lessons.sql` from the Supabase SQL editor.
+Run the SQL files in `supabase/migrations` from the Supabase SQL editor.
 
-This creates the `public.lessons` table and row-level security policies so each authenticated user can only read and write their own lessons.
+This creates the `public.lessons` and `public.lesson_attempts` tables with row-level security policies so each authenticated user can only read and write their own learning data.
 
 ## Production
 
@@ -93,7 +93,8 @@ Phase 2 is now mostly complete. The remaining work has moved into Phase 3: movin
 
 - `profiles`: user language preferences and current level
 - `lessons`: generated texts and workbook JSON, already implemented for saved lessons
-- `lesson_attempts`: quiz scores, writing feedback, and timestamps
+- `lesson_attempts`: quiz scores and timestamps, already implemented
+- Writing feedback history table
 - `vocabulary_items`: saved terms and review state
 - `review_events`: spaced repetition schedule
 

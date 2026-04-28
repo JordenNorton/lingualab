@@ -119,7 +119,20 @@ export const workbookFeedbackSchema = z.object({
   nextStep: z.string()
 });
 
+export const quizAttemptCreateSchema = z.object({
+  lessonId: z.string().min(1).max(160),
+  title: z.string().min(1).max(220),
+  targetLanguage: z.string().min(2).max(60),
+  level: z.enum(levels),
+  score: z.number().int().min(0).max(100)
+});
+
+export const quizAttemptSchema = quizAttemptCreateSchema.extend({
+  createdAt: z.string()
+});
+
 export type LessonRequest = z.infer<typeof lessonRequestSchema>;
 export type Lesson = z.infer<typeof lessonSchema>;
 export type Explanation = z.infer<typeof explanationSchema>;
 export type WorkbookFeedback = z.infer<typeof workbookFeedbackSchema>;
+export type QuizAttempt = z.infer<typeof quizAttemptSchema>;

@@ -25,7 +25,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { TouchEvent } from "react";
 import { clsx } from "clsx";
 import { defaultLessonRequest, demoLesson } from "@/lib/demo-lesson";
-import type { Explanation, Lesson, LessonRequest, WorkbookFeedback } from "@/lib/schemas";
+import type { Explanation, Lesson, LessonRequest, QuizAttempt, WorkbookFeedback } from "@/lib/schemas";
 import { contentTypes, focusAreas, lengths, levels, tones } from "@/lib/schemas";
 
 const savedLessonsKey = "lingualab.savedLessons.v1";
@@ -81,15 +81,6 @@ type SavedLesson = {
   lesson: Lesson;
 };
 
-type QuizAttempt = {
-  lessonId: string;
-  title: string;
-  targetLanguage: string;
-  level: string;
-  score: number;
-  createdAt: string;
-};
-
 type ApiMeta = {
   mode?: "ai" | "demo";
   message?: string;
@@ -125,7 +116,15 @@ function activateOnTouch(event: TouchEvent<HTMLButtonElement>, action: () => voi
   action();
 }
 
-export function LanguageLab({ userEmail, initialLesson }: { userEmail: string | null; initialLesson: Lesson | null }) {
+export function LanguageLab({
+  userEmail,
+  initialLesson,
+  initialAttempts
+}: {
+  userEmail: string | null;
+  initialLesson: Lesson | null;
+  initialAttempts: QuizAttempt[];
+}) {
   const [request, setRequest] = useState<LessonRequest>(defaultLessonRequest);
   const [lesson, setLesson] = useState<Lesson>(initialLesson ?? demoLesson);
   const [meta, setMeta] = useState<ApiMeta>({
@@ -134,9 +133,10 @@ export function LanguageLab({ userEmail, initialLesson }: { userEmail: string | 
   });
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSavingLesson, setIsSavingLesson] = useState(false);
+  const [isSavingAttempt, setIsSavingAttempt] = useState(false);
   const [status, setStatus] = useState("");
   const [savedLessons, setSavedLessons] = useState<SavedLesson[]>([]);
-  const [attempts, setAttempts] = useState<QuizAttempt[]>([]);
+  const [attempts, setAttempts] = useState<QuizAttempt[]>(initialAttempts);
   const [mcAnswers, setMcAnswers] = useState<Record<string, number>>({});
   const [fillAnswers, setFillAnswers] = useState<Record<string, string>>({});
   const [quizSubmitted, setQuizSubmitted] = useState(false);
@@ -154,14 +154,16 @@ export function LanguageLab({ userEmail, initialLesson }: { userEmail: string | 
       if (!isMounted) return;
 
       setSavedLessons(readLocalStorage<SavedLesson[]>(savedLessonsKey, []));
-      setAttempts(readLocalStorage<QuizAttempt[]>(attemptsKey, []));
+      if (!userEmail) {
+        setAttempts(readLocalStorage<QuizAttempt[]>(attemptsKey, []));
+      }
     }, 0);
 
     return () => {
       isMounted = false;
       window.clearTimeout(timer);
     };
-  }, []);
+  }, [userEmail]);
 
   const readingText = useMemo(
     () =>
@@ -340,20 +342,50 @@ export function LanguageLab({ userEmail, initialLesson }: { userEmail: string | 
     }
   }
 
-  function submitQuiz() {
+  async function submitQuiz() {
     setQuizSubmitted(true);
-    const attempt: QuizAttempt = {
+    const attempt = {
       lessonId: lesson.id,
       title: lesson.title,
       targetLanguage: lesson.targetLanguage,
       level: lesson.level,
-      score: quizScore,
-      createdAt: new Date().toISOString()
+      score: quizScore
     };
-    const next = [attempt, ...attempts].slice(0, 20);
-    setAttempts(next);
-    writeLocalStorage(attemptsKey, next);
-    setStatus(`Workbook checked: ${quizScore}%.`);
+
+    if (!userEmail) {
+      const localAttempt: QuizAttempt = {
+        ...attempt,
+        createdAt: new Date().toISOString()
+      };
+      const next = [localAttempt, ...attempts].slice(0, 20);
+      setAttempts(next);
+      writeLocalStorage(attemptsKey, next);
+      setStatus(`Workbook checked: ${quizScore}%. Saved to this browser.`);
+      return;
+    }
+
+    setIsSavingAttempt(true);
+
+    try {
+      const response = await fetch("/api/lesson-attempts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ attempt })
+      });
+      const data = (await response.json()) as { attempt?: QuizAttempt; error?: string };
+
+      if (!response.ok || !data.attempt) {
+        throw new Error(data.error || "The quiz attempt could not be saved.");
+      }
+
+      const savedAttempt = data.attempt;
+      setAttempts((current) => [savedAttempt, ...current].slice(0, 20));
+      setStatus(`Workbook checked: ${quizScore}%. Saved to your account.`);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "The quiz attempt could not be saved.");
+    } finally {
+      setIsSavingAttempt(false);
+    }
   }
 
   async function checkWriting() {
@@ -625,7 +657,9 @@ export function LanguageLab({ userEmail, initialLesson }: { userEmail: string | 
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <h2 className="font-semibold text-ink">Progress</h2>
-                <p className="text-sm text-ink/60">Local for now, ready to move into Supabase later.</p>
+                <p className="text-sm text-ink/60">
+                  {userEmail ? "Synced to your account." : "Local to this browser until you log in."}
+                </p>
               </div>
               <History size={20} className="text-coral" aria-hidden="true" />
             </div>
@@ -880,17 +914,24 @@ export function LanguageLab({ userEmail, initialLesson }: { userEmail: string | 
                     <div>
                       <p className="font-semibold text-ink">Quiz score</p>
                       <p className="text-sm text-ink/60">
-                        {quizSubmitted ? `${quizScore}% saved to local progress.` : "Complete the questions, then check your work."}
+                        {quizSubmitted
+                          ? userEmail
+                            ? `${quizScore}% saved to your account.`
+                            : `${quizScore}% saved to this browser.`
+                          : "Complete the questions, then check your work."}
                       </p>
                     </div>
                     <button
                       type="button"
-                      className="flex h-10 items-center justify-center gap-2 rounded-md bg-ink px-4 text-sm font-semibold text-white transition hover:bg-graphite"
+                      className="flex h-10 items-center justify-center gap-2 rounded-md bg-ink px-4 text-sm font-semibold text-white transition hover:bg-graphite disabled:cursor-not-allowed disabled:opacity-65"
                       onClick={submitQuiz}
-                      onTouchEnd={(event) => activateOnTouch(event, submitQuiz)}
+                      onTouchEnd={(event) => {
+                        if (!isSavingAttempt) activateOnTouch(event, submitQuiz);
+                      }}
+                      disabled={isSavingAttempt}
                     >
-                      <CheckCircle2 size={16} aria-hidden="true" />
-                      Check workbook
+                      {isSavingAttempt ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} aria-hidden="true" />}
+                      {isSavingAttempt ? "Saving score" : "Check workbook"}
                     </button>
                   </div>
 
