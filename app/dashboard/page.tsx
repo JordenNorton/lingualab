@@ -134,7 +134,12 @@ export default async function DashboardPage() {
         </div>
 
         <aside className="rounded-lg border border-ink/10 bg-white p-5 shadow-soft">
-          <h2 className="text-xl font-semibold text-ink">Recent Quiz Attempts</h2>
+          <div className="flex items-start justify-between gap-3">
+            <h2 className="text-xl font-semibold text-ink">Recent Quiz Attempts</h2>
+            <Link href="/dashboard/attempts" className="shrink-0 text-sm font-semibold text-lagoon">
+              Show more
+            </Link>
+          </div>
           {attemptsError ? (
             <p className="mt-4 rounded-md border border-coral/20 bg-coral/10 p-3 text-sm text-ink/70">
               Run the lesson attempts migration to show quiz history here.

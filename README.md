@@ -31,6 +31,7 @@ AI-generated reading practice for language learners.
 ### Phase 3: Progress And Review
 
 - [x] Move quiz attempts from browser `localStorage` into Supabase
+- [x] Add a filtered quiz attempt history page
 - [ ] Store writing feedback history per user
 - [ ] Add `profiles` for user language preferences and current level
 - [ ] Add `vocabulary_items` for saved terms and review state
