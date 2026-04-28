@@ -1,3 +1,4 @@
+import { requireSignedInUser } from "@/lib/api-auth";
 import { createDemoExplanation } from "@/lib/demo-lesson";
 import { explanationJsonSchema } from "@/lib/json-schemas";
 import { createOpenAIClient, getOpenAIModel, hasOpenAIKey, parseResponseJson, reasoningForModel } from "@/lib/openai";
@@ -7,6 +8,9 @@ import { explanationRequestSchema, explanationSchema } from "@/lib/schemas";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  const authError = await requireSignedInUser();
+  if (authError) return authError;
+
   const body = await request.json().catch(() => null);
   const parsed = explanationRequestSchema.safeParse(body);
 

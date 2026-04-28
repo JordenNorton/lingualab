@@ -30,6 +30,7 @@ import { contentTypes, focusAreas, lengths, levels, tones } from "@/lib/schemas"
 
 const savedLessonsKey = "lingualab.savedLessons.v1";
 const attemptsKey = "lingualab.attempts.v1";
+const loginToGenerateMessage = "Log in or create an account to generate new text.";
 
 const contentLabels: Record<LessonRequest["contentType"], string> = {
   "news-brief": "News brief",
@@ -145,6 +146,7 @@ export function LanguageLab({ userEmail, initialLesson }: { userEmail: string | 
   const [writingAnswer, setWritingAnswer] = useState("");
   const [feedback, setFeedback] = useState<WorkbookFeedback | null>(null);
   const [isCheckingWriting, setIsCheckingWriting] = useState(false);
+  const isTextGenerationLocked = !userEmail;
 
   useEffect(() => {
     let isMounted = true;
@@ -215,6 +217,11 @@ export function LanguageLab({ userEmail, initialLesson }: { userEmail: string | 
   }
 
   async function generateLesson() {
+    if (!userEmail) {
+      setStatus(loginToGenerateMessage);
+      return;
+    }
+
     setIsGenerating(true);
     setStatus("");
 
@@ -290,6 +297,11 @@ export function LanguageLab({ userEmail, initialLesson }: { userEmail: string | 
   }
 
   async function explainSelection() {
+    if (!userEmail) {
+      setStatus(loginToGenerateMessage);
+      return;
+    }
+
     const selection = window.getSelection()?.toString().trim() || selectedText;
 
     if (!selection) {
@@ -345,6 +357,11 @@ export function LanguageLab({ userEmail, initialLesson }: { userEmail: string | 
   }
 
   async function checkWriting() {
+    if (!userEmail) {
+      setStatus(loginToGenerateMessage);
+      return;
+    }
+
     if (!writingAnswer.trim()) {
       setStatus("Write a short response before asking for feedback.");
       return;
@@ -593,12 +610,12 @@ export function LanguageLab({ userEmail, initialLesson }: { userEmail: string | 
                 className="flex h-12 w-full items-center justify-center gap-2 rounded-md bg-ink px-4 font-semibold text-white transition hover:bg-graphite disabled:cursor-not-allowed disabled:opacity-65"
                 onClick={generateLesson}
                 onTouchEnd={(event) => {
-                  if (!isGenerating) activateOnTouch(event, generateLesson);
+                  if (!isGenerating && !isTextGenerationLocked) activateOnTouch(event, generateLesson);
                 }}
-                disabled={isGenerating}
+                disabled={isGenerating || isTextGenerationLocked}
               >
                 {isGenerating ? <Loader2 size={18} className="animate-spin" /> : <Wand2 size={18} />}
-                {isGenerating ? "Generating lesson" : "Generate lesson"}
+                {isGenerating ? "Generating lesson" : isTextGenerationLocked ? "Log in to generate" : "Generate lesson"}
               </button>
               {status ? <p className="rounded-md bg-paper px-3 py-2 text-sm text-ink/70">{status}</p> : null}
             </div>
@@ -681,9 +698,9 @@ export function LanguageLab({ userEmail, initialLesson }: { userEmail: string | 
                 className="flex h-10 items-center gap-2 rounded-md bg-lagoon px-3 text-sm font-medium text-white transition hover:bg-[#176b68] disabled:cursor-not-allowed disabled:opacity-65"
                 onClick={explainSelection}
                 onTouchEnd={(event) => {
-                  if (!isExplaining) activateOnTouch(event, explainSelection);
+                  if (!isExplaining && !isTextGenerationLocked) activateOnTouch(event, explainSelection);
                 }}
-                disabled={isExplaining}
+                disabled={isExplaining || isTextGenerationLocked}
               >
                 {isExplaining ? <Loader2 size={16} className="animate-spin" /> : <Lightbulb size={16} />}
                 Explain selection
@@ -897,12 +914,12 @@ export function LanguageLab({ userEmail, initialLesson }: { userEmail: string | 
                         className="flex h-10 items-center justify-center gap-2 rounded-md bg-lagoon px-4 text-sm font-semibold text-white transition hover:bg-[#176b68] disabled:cursor-not-allowed disabled:opacity-65"
                         onClick={checkWriting}
                         onTouchEnd={(event) => {
-                          if (!isCheckingWriting) activateOnTouch(event, checkWriting);
+                          if (!isCheckingWriting && !isTextGenerationLocked) activateOnTouch(event, checkWriting);
                         }}
-                        disabled={isCheckingWriting}
+                        disabled={isCheckingWriting || isTextGenerationLocked}
                       >
                         {isCheckingWriting ? <Loader2 size={16} className="animate-spin" /> : <MessageSquareText size={16} />}
-                        Get feedback
+                        {isTextGenerationLocked ? "Log in for feedback" : "Get feedback"}
                       </button>
                       {feedback ? <span className="text-sm font-semibold text-lagoon">{feedback.score}/100</span> : null}
                     </div>

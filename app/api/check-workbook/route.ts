@@ -1,3 +1,4 @@
+import { requireSignedInUser } from "@/lib/api-auth";
 import { createDemoWorkbookFeedback } from "@/lib/demo-lesson";
 import { workbookFeedbackJsonSchema } from "@/lib/json-schemas";
 import { createOpenAIClient, getOpenAIModel, hasOpenAIKey, parseResponseJson, reasoningForModel } from "@/lib/openai";
@@ -7,6 +8,9 @@ import { workbookCheckRequestSchema, workbookFeedbackSchema } from "@/lib/schema
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  const authError = await requireSignedInUser();
+  if (authError) return authError;
+
   const body = await request.json().catch(() => null);
   const parsed = workbookCheckRequestSchema.safeParse(body);
 
