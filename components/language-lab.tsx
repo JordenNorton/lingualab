@@ -116,6 +116,14 @@ function activateOnTouch(event: TouchEvent<HTMLButtonElement>, action: () => voi
   action();
 }
 
+function createQuizSignature(lesson: Lesson, mcAnswers: Record<string, number>, fillAnswers: Record<string, string>) {
+  return JSON.stringify({
+    lessonId: lesson.id,
+    multipleChoice: lesson.workbook.multipleChoice.map((question) => [question.id, mcAnswers[question.id] ?? null]),
+    fillBlank: lesson.workbook.fillBlank.map((question) => [question.id, fillAnswers[question.id] ?? ""])
+  });
+}
+
 export function LanguageLab({
   userEmail,
   initialLesson,
@@ -140,6 +148,7 @@ export function LanguageLab({
   const [mcAnswers, setMcAnswers] = useState<Record<string, number>>({});
   const [fillAnswers, setFillAnswers] = useState<Record<string, string>>({});
   const [quizSubmitted, setQuizSubmitted] = useState(false);
+  const [lastSavedQuizSignature, setLastSavedQuizSignature] = useState<string | null>(null);
   const [explanation, setExplanation] = useState<Explanation | null>(null);
   const [selectedText, setSelectedText] = useState("");
   const [isExplaining, setIsExplaining] = useState(false);
@@ -185,6 +194,9 @@ export function LanguageLab({
     return total === 0 ? 0 : Math.round(((multipleChoiceCorrect + fillCorrect) / total) * 100);
   }, [fillAnswers, lesson, mcAnswers]);
 
+  const quizSignature = useMemo(() => createQuizSignature(lesson, mcAnswers, fillAnswers), [fillAnswers, lesson, mcAnswers]);
+  const isDuplicateQuizAttempt = lastSavedQuizSignature === quizSignature;
+
   const progress = useMemo(() => {
     const average = attempts.length
       ? Math.round(attempts.reduce((sum, attempt) => sum + attempt.score, 0) / attempts.length)
@@ -212,6 +224,7 @@ export function LanguageLab({
     setMcAnswers({});
     setFillAnswers({});
     setQuizSubmitted(false);
+    setLastSavedQuizSignature(null);
     setExplanation(null);
     setSelectedText("");
     setWritingAnswer("");
@@ -343,6 +356,11 @@ export function LanguageLab({
   }
 
   async function submitQuiz() {
+    if (isDuplicateQuizAttempt) {
+      setStatus("This score is already saved. Change an answer to save another attempt.");
+      return;
+    }
+
     setQuizSubmitted(true);
     const attempt = {
       lessonId: lesson.id,
@@ -360,6 +378,7 @@ export function LanguageLab({
       const next = [localAttempt, ...attempts].slice(0, 20);
       setAttempts(next);
       writeLocalStorage(attemptsKey, next);
+      setLastSavedQuizSignature(quizSignature);
       setStatus(`Workbook checked: ${quizScore}%. Saved to this browser.`);
       return;
     }
@@ -380,6 +399,7 @@ export function LanguageLab({
 
       const savedAttempt = data.attempt;
       setAttempts((current) => [savedAttempt, ...current].slice(0, 20));
+      setLastSavedQuizSignature(quizSignature);
       setStatus(`Workbook checked: ${quizScore}%. Saved to your account.`);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "The quiz attempt could not be saved.");
@@ -915,9 +935,11 @@ export function LanguageLab({
                       <p className="font-semibold text-ink">Quiz score</p>
                       <p className="text-sm text-ink/60">
                         {quizSubmitted
-                          ? userEmail
-                            ? `${quizScore}% saved to your account.`
-                            : `${quizScore}% saved to this browser.`
+                          ? isDuplicateQuizAttempt
+                            ? userEmail
+                              ? `${quizScore}% saved to your account.`
+                              : `${quizScore}% saved to this browser.`
+                            : "Answers changed. Check again to save a new score."
                           : "Complete the questions, then check your work."}
                       </p>
                     </div>
@@ -926,12 +948,12 @@ export function LanguageLab({
                       className="flex h-10 items-center justify-center gap-2 rounded-md bg-ink px-4 text-sm font-semibold text-white transition hover:bg-graphite disabled:cursor-not-allowed disabled:opacity-65"
                       onClick={submitQuiz}
                       onTouchEnd={(event) => {
-                        if (!isSavingAttempt) activateOnTouch(event, submitQuiz);
+                        if (!isSavingAttempt && !isDuplicateQuizAttempt) activateOnTouch(event, submitQuiz);
                       }}
-                      disabled={isSavingAttempt}
+                      disabled={isSavingAttempt || isDuplicateQuizAttempt}
                     >
                       {isSavingAttempt ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} aria-hidden="true" />}
-                      {isSavingAttempt ? "Saving score" : "Check workbook"}
+                      {isSavingAttempt ? "Saving score" : isDuplicateQuizAttempt ? "Score saved" : quizSubmitted ? "Save new score" : "Check workbook"}
                     </button>
                   </div>
 
