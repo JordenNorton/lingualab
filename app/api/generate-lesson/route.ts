@@ -1,3 +1,4 @@
+import { requireSignedInUser } from "@/lib/api-auth";
 import { createDemoLesson } from "@/lib/demo-lesson";
 import { lessonResponseJsonSchema } from "@/lib/json-schemas";
 import { createOpenAIClient, getOpenAIModel, hasOpenAIKey, parseResponseJson, reasoningForModel } from "@/lib/openai";
@@ -7,6 +8,9 @@ import { lessonRequestSchema, lessonSchema } from "@/lib/schemas";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  const authError = await requireSignedInUser();
+  if (authError) return authError;
+
   const body = await request.json().catch(() => null);
   const parsed = lessonRequestSchema.safeParse(body);
 
