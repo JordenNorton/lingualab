@@ -104,6 +104,8 @@ export const explanationSchema = z.object({
 });
 
 export const workbookCheckRequestSchema = z.object({
+  lessonId: z.string().min(1).max(160),
+  title: z.string().min(1).max(220),
   targetLanguage: z.string().min(2).max(60),
   nativeLanguage: z.string().min(2).max(60),
   level: z.enum(levels),
@@ -131,8 +133,16 @@ export const quizAttemptSchema = quizAttemptCreateSchema.extend({
   createdAt: z.string()
 });
 
+export const writingFeedbackHistorySchema = workbookCheckRequestSchema.extend({
+  id: z.string(),
+  feedback: workbookFeedbackSchema,
+  score: z.number().int().min(0).max(100),
+  createdAt: z.string()
+});
+
 export type LessonRequest = z.infer<typeof lessonRequestSchema>;
 export type Lesson = z.infer<typeof lessonSchema>;
 export type Explanation = z.infer<typeof explanationSchema>;
 export type WorkbookFeedback = z.infer<typeof workbookFeedbackSchema>;
 export type QuizAttempt = z.infer<typeof quizAttemptSchema>;
+export type WritingFeedbackHistory = z.infer<typeof writingFeedbackHistorySchema>;

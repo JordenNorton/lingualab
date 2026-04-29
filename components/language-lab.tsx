@@ -427,6 +427,8 @@ export function LanguageLab({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          lessonId: lesson.id,
+          title: lesson.title,
           targetLanguage: lesson.targetLanguage,
           nativeLanguage: lesson.nativeLanguage,
           level: lesson.level,

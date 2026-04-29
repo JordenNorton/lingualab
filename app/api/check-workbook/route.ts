@@ -1,4 +1,5 @@
-import { requireSignedInUser } from "@/lib/api-auth";
+import type { z } from "zod";
+import { getAuthenticatedSupabase } from "@/lib/api-auth";
 import { createDemoWorkbookFeedback } from "@/lib/demo-lesson";
 import { workbookFeedbackJsonSchema } from "@/lib/json-schemas";
 import { createOpenAIClient, getOpenAIModel, hasOpenAIKey, parseResponseJson, reasoningForModel } from "@/lib/openai";
@@ -7,9 +8,11 @@ import { workbookCheckRequestSchema, workbookFeedbackSchema } from "@/lib/schema
 
 export const runtime = "nodejs";
 
+type WorkbookCheckRequest = z.infer<typeof workbookCheckRequestSchema>;
+
 export async function POST(request: Request) {
-  const authError = await requireSignedInUser();
-  if (authError) return authError;
+  const auth = await getAuthenticatedSupabase();
+  if ("response" in auth) return auth.response;
 
   const body = await request.json().catch(() => null);
   const parsed = workbookCheckRequestSchema.safeParse(body);
@@ -24,51 +27,49 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!hasOpenAIKey()) {
-    return Response.json({
-      feedback: createDemoWorkbookFeedback(),
-      meta: {
-        mode: "demo",
-        message: "Set OPENAI_API_KEY to enable live writing feedback."
-      }
-    });
-  }
-
   try {
-    const model = getOpenAIModel();
-    const client = createOpenAIClient();
-    const response = await client.responses.create({
-      model,
-      instructions: buildWorkbookFeedbackInstructions(parsed.data.nativeLanguage),
-      input: [
-        `Target language: ${parsed.data.targetLanguage}`,
-        `Learner level: ${parsed.data.level}`,
-        `Workbook prompt: ${parsed.data.prompt}`,
-        `Success criteria: ${parsed.data.successCriteria.join("; ") || "No extra criteria."}`,
-        `Learner answer: ${parsed.data.answer}`
-      ].join("\n"),
-      reasoning: reasoningForModel(model),
-      text: {
-        verbosity: "low",
-        format: {
-          type: "json_schema",
-          name: "workbook_feedback",
-          strict: true,
-          schema: workbookFeedbackJsonSchema
+    const model = hasOpenAIKey() ? getOpenAIModel() : null;
+    const feedback = model ? await createWorkbookFeedback(parsed.data, model) : createDemoWorkbookFeedback();
+    const meta = model
+      ? {
+          mode: "ai" as const,
+          model,
+          message: "Writing feedback saved to your account."
         }
-      }
-    });
+      : {
+          mode: "demo" as const,
+          message: "Demo writing feedback saved to your account. Set OPENAI_API_KEY to enable live feedback."
+        };
 
-    const feedback = workbookFeedbackSchema.parse(
-      parseResponseJson<unknown>(response.output_text, "The model returned workbook feedback that was not valid JSON.")
-    );
+    const { data: savedFeedback, error } = await auth.supabase
+      .from("writing_feedback")
+      .insert({
+        user_id: auth.user.id,
+        lesson_key: parsed.data.lessonId,
+        title: parsed.data.title,
+        target_language: parsed.data.targetLanguage,
+        native_language: parsed.data.nativeLanguage,
+        level: parsed.data.level,
+        prompt: parsed.data.prompt,
+        success_criteria: parsed.data.successCriteria,
+        answer: parsed.data.answer,
+        feedback,
+        score: feedback.score
+      })
+      .select("id, created_at")
+      .single<{ id: string; created_at: string }>();
+
+    if (error) {
+      return Response.json({ error: error.message }, { status: 500 });
+    }
 
     return Response.json({
       feedback,
-      meta: {
-        mode: "ai",
-        model
-      }
+      savedFeedback: {
+        id: savedFeedback.id,
+        createdAt: savedFeedback.created_at
+      },
+      meta
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to check that workbook response.";
@@ -80,4 +81,33 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
+}
+
+async function createWorkbookFeedback(data: WorkbookCheckRequest, model: string) {
+  const client = createOpenAIClient();
+  const response = await client.responses.create({
+    model,
+    instructions: buildWorkbookFeedbackInstructions(data.nativeLanguage),
+    input: [
+      `Target language: ${data.targetLanguage}`,
+      `Learner level: ${data.level}`,
+      `Workbook prompt: ${data.prompt}`,
+      `Success criteria: ${data.successCriteria.join("; ") || "No extra criteria."}`,
+      `Learner answer: ${data.answer}`
+    ].join("\n"),
+    reasoning: reasoningForModel(model),
+    text: {
+      verbosity: "low",
+      format: {
+        type: "json_schema",
+        name: "workbook_feedback",
+        strict: true,
+        schema: workbookFeedbackJsonSchema
+      }
+    }
+  });
+
+  return workbookFeedbackSchema.parse(
+    parseResponseJson<unknown>(response.output_text, "The model returned workbook feedback that was not valid JSON.")
+  );
 }

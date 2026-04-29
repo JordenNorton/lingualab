@@ -4,6 +4,8 @@ import { logout } from "@/lib/auth-actions";
 import { lessonSchema } from "@/lib/schemas";
 import { createClient } from "@/lib/supabase/server";
 
+const dashboardPreviewLimit = 5;
+
 type SavedLessonRow = {
   id: string;
   title: string;
@@ -20,6 +22,16 @@ type LessonAttemptRow = {
   target_language: string;
   level: string;
   score: number;
+  created_at: string;
+};
+
+type WritingFeedbackRow = {
+  id: string;
+  title: string;
+  target_language: string;
+  level: string;
+  score: number;
+  prompt: string;
   created_at: string;
 };
 
@@ -50,11 +62,24 @@ export default async function DashboardPage() {
     .select("id, title, target_language, level, score, created_at", { count: "exact" })
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
-    .limit(5)
+    .limit(dashboardPreviewLimit)
     .returns<LessonAttemptRow[]>();
+
+  const {
+    data: writingFeedback,
+    count: writingFeedbackCount,
+    error: writingFeedbackError
+  } = await supabase
+    .from("writing_feedback")
+    .select("id, title, target_language, level, score, prompt, created_at", { count: "exact" })
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(dashboardPreviewLimit)
+    .returns<WritingFeedbackRow[]>();
 
   const savedLessons = lessons ?? [];
   const recentAttempts = attempts ?? [];
+  const recentWritingFeedback = writingFeedback ?? [];
   const vocabularyCount = savedLessons.reduce((count, savedLesson) => {
     const parsed = lessonSchema.safeParse(savedLesson.lesson);
     return count + (parsed.success ? parsed.data.vocabulary.length : 0);
@@ -88,9 +113,10 @@ export default async function DashboardPage() {
         </div>
       </header>
 
-      <section className="grid gap-4 md:grid-cols-3">
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <DashboardMetric label="Saved lessons" value={String(savedLessons.length)} />
         <DashboardMetric label="Quiz attempts" value={String(attemptsCount ?? recentAttempts.length)} />
+        <DashboardMetric label="Writing feedback" value={String(writingFeedbackCount ?? recentWritingFeedback.length)} />
         <DashboardMetric label="Vocabulary terms" value={String(vocabularyCount)} />
       </section>
 
@@ -133,39 +159,80 @@ export default async function DashboardPage() {
           )}
         </div>
 
-        <aside className="rounded-lg border border-ink/10 bg-white p-5 shadow-soft">
-          <div className="flex items-start justify-between gap-3">
-            <h2 className="text-xl font-semibold text-ink">Recent Quiz Attempts</h2>
-            <Link href="/dashboard/attempts" className="shrink-0 text-sm font-semibold text-lagoon">
-              Show more
-            </Link>
-          </div>
-          {attemptsError ? (
-            <p className="mt-4 rounded-md border border-coral/20 bg-coral/10 p-3 text-sm text-ink/70">
-              Run the lesson attempts migration to show quiz history here.
-            </p>
-          ) : recentAttempts.length ? (
-            <div className="mt-4 space-y-3">
-              {recentAttempts.map((attempt) => (
-                <div key={attempt.id} className="rounded-md border border-ink/10 bg-paper/55 p-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <p className="min-w-0 truncate font-semibold text-ink">{attempt.title}</p>
-                    <span className="shrink-0 rounded-md bg-lagoon/10 px-2 py-1 text-xs font-semibold text-lagoon">
-                      {attempt.score}%
-                    </span>
-                  </div>
-                  <p className="mt-1 text-sm text-ink/58">
-                    {attempt.target_language} | {attempt.level} | {formatDate(attempt.created_at)}
-                  </p>
-                </div>
-              ))}
+        <div className="space-y-4">
+          <aside className="rounded-lg border border-ink/10 bg-white p-5 shadow-soft">
+            <div className="flex items-start justify-between gap-3">
+              <h2 className="text-xl font-semibold text-ink">Recent Quiz Attempts</h2>
+              <Link href="/dashboard/attempts" className="shrink-0 text-sm font-semibold text-lagoon">
+                Show more
+              </Link>
             </div>
-          ) : (
-            <p className="mt-4 rounded-md border border-dashed border-ink/20 bg-paper/50 p-4 text-sm text-ink/55">
-              No quiz attempts yet.
-            </p>
-          )}
-        </aside>
+            {attemptsError ? (
+              <p className="mt-4 rounded-md border border-coral/20 bg-coral/10 p-3 text-sm text-ink/70">
+                Run the lesson attempts migration to show quiz history here.
+              </p>
+            ) : recentAttempts.length ? (
+              <div className="mt-4 space-y-3">
+                {recentAttempts.map((attempt) => (
+                  <div key={attempt.id} className="rounded-md border border-ink/10 bg-paper/55 p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="min-w-0 truncate font-semibold text-ink">{attempt.title}</p>
+                      <span className="shrink-0 rounded-md bg-lagoon/10 px-2 py-1 text-xs font-semibold text-lagoon">
+                        {attempt.score}%
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm text-ink/58">
+                      {attempt.target_language} | {attempt.level} | {formatDate(attempt.created_at)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-4 rounded-md border border-dashed border-ink/20 bg-paper/50 p-4 text-sm text-ink/55">
+                No quiz attempts yet.
+              </p>
+            )}
+          </aside>
+
+          <aside className="rounded-lg border border-ink/10 bg-white p-5 shadow-soft">
+            <div className="flex items-start justify-between gap-3">
+              <h2 className="text-xl font-semibold text-ink">Recent Writing Feedback</h2>
+              <Link href="/dashboard/writing-feedback" className="shrink-0 text-sm font-semibold text-lagoon">
+                Show more
+              </Link>
+            </div>
+            {writingFeedbackError ? (
+              <p className="mt-4 rounded-md border border-coral/20 bg-coral/10 p-3 text-sm text-ink/70">
+                Run the writing feedback migration to show feedback history here.
+              </p>
+            ) : recentWritingFeedback.length ? (
+              <div className="mt-4 space-y-3">
+                {recentWritingFeedback.map((item) => (
+                  <Link
+                    key={item.id}
+                    href={`/dashboard/writing-feedback/${item.id}`}
+                    className="block rounded-md border border-ink/10 bg-paper/55 p-3 transition hover:border-lagoon/40 hover:bg-paper/80"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="min-w-0 truncate font-semibold text-ink">{item.title}</p>
+                      <span className="shrink-0 rounded-md bg-coral/10 px-2 py-1 text-xs font-semibold text-coral">
+                        {item.score}/100
+                      </span>
+                    </div>
+                    <p className="mt-1 line-clamp-2 text-sm text-ink/62">{item.prompt}</p>
+                    <p className="mt-2 text-sm text-ink/58">
+                      {item.target_language} | {item.level} | {formatDate(item.created_at)}
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-4 rounded-md border border-dashed border-ink/20 bg-paper/50 p-4 text-sm text-ink/55">
+                No writing feedback yet.
+              </p>
+            )}
+          </aside>
+        </div>
       </section>
     </main>
   );

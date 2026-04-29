@@ -32,7 +32,7 @@ AI-generated reading practice for language learners.
 
 - [x] Move quiz attempts from browser `localStorage` into Supabase
 - [x] Add a filtered quiz attempt history page
-- [ ] Store writing feedback history per user
+- [x] Store writing feedback history per user
 - [ ] Add `profiles` for user language preferences and current level
 - [ ] Add `vocabulary_items` for saved terms and review state
 - [ ] Add `review_events` for spaced repetition scheduling
@@ -45,7 +45,7 @@ AI-generated reading practice for language learners.
 - Tailwind CSS
 - OpenAI Responses API
 - Supabase Auth
-- Supabase Postgres with row-level security for saved lessons and quiz attempts
+- Supabase Postgres with row-level security for saved lessons, quiz attempts, and writing feedback
 - Browser `localStorage` for logged-out demo progress fallback
 
 ## Local Setup
@@ -77,7 +77,7 @@ Auth routes:
 
 Run the SQL files in `supabase/migrations` from the Supabase SQL editor.
 
-This creates the `public.lessons` and `public.lesson_attempts` tables with row-level security policies so each authenticated user can only read and write their own learning data.
+This creates the `public.lessons`, `public.lesson_attempts`, and `public.writing_feedback` tables with row-level security policies so each authenticated user can only read and write their own learning data.
 
 ## Production
 
@@ -95,7 +95,7 @@ Phase 2 is now mostly complete. The remaining work has moved into Phase 3: movin
 - `profiles`: user language preferences and current level
 - `lessons`: generated texts and workbook JSON, already implemented for saved lessons
 - `lesson_attempts`: quiz scores and timestamps, already implemented
-- Writing feedback history table
+- `writing_feedback`: writing prompt answers and feedback results, already implemented
 - `vocabulary_items`: saved terms and review state
 - `review_events`: spaced repetition schedule
 
