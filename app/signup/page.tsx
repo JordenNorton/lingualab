@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { signup } from "@/lib/auth-actions";
+import { languageOptions, levels } from "@/lib/schemas";
 import { createClient } from "@/lib/supabase/server";
 
 type SignupPageProps = {
@@ -23,7 +24,7 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
 
   return (
     <main className="flex min-h-screen items-center justify-center px-4 py-8">
-      <section className="w-full max-w-md rounded-lg border border-ink/10 bg-white p-6 shadow-soft">
+      <section className="w-full max-w-lg rounded-lg border border-ink/10 bg-white p-6 shadow-soft">
         <Link href="/" className="mb-6 inline-flex text-sm font-semibold text-lagoon">
           LinguaLab
         </Link>
@@ -54,6 +55,62 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
               required
             />
           </label>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block space-y-1.5">
+              <span className="text-sm font-medium text-ink/75">Learning language</span>
+              <select
+                className="h-11 w-full rounded-md border border-ink/15 bg-paper/60 px-3 text-ink outline-none transition focus:border-lagoon focus:ring-2 focus:ring-lagoon/20"
+                name="targetLanguage"
+                defaultValue="Spanish"
+                required
+              >
+                {languageOptions.map((language) => (
+                  <option key={language} value={language}>
+                    {language}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block space-y-1.5">
+              <span className="text-sm font-medium text-ink/75">Native language</span>
+              <select
+                className="h-11 w-full rounded-md border border-ink/15 bg-paper/60 px-3 text-ink outline-none transition focus:border-lagoon focus:ring-2 focus:ring-lagoon/20"
+                name="nativeLanguage"
+                defaultValue="English"
+                required
+              >
+                {languageOptions.map((language) => (
+                  <option key={language} value={language}>
+                    {language}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block space-y-1.5">
+              <span className="text-sm font-medium text-ink/75">Current level</span>
+              <select
+                className="h-11 w-full rounded-md border border-ink/15 bg-paper/60 px-3 text-ink outline-none transition focus:border-lagoon focus:ring-2 focus:ring-lagoon/20"
+                name="currentLevel"
+                defaultValue="A2"
+                required
+              >
+                {levels.map((level) => (
+                  <option key={level} value={level}>
+                    {level}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block space-y-1.5">
+              <span className="text-sm font-medium text-ink/75">Regional variant</span>
+              <input
+                className="h-11 w-full rounded-md border border-ink/15 bg-paper/60 px-3 text-ink outline-none transition focus:border-lagoon focus:ring-2 focus:ring-lagoon/20"
+                name="regionVariant"
+                defaultValue="Latin American Spanish"
+                maxLength={80}
+              />
+            </label>
+          </div>
           <button
             type="submit"
             className="flex h-11 w-full items-center justify-center rounded-md bg-ink px-4 font-semibold text-white transition hover:bg-graphite"

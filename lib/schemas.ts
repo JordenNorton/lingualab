@@ -52,6 +52,13 @@ export const focusAreas = ["vocabulary", "grammar", "idioms", "conversation", "e
 export const fontSizePreferences = ["small", "default", "large", "extra-large"] as const;
 export const themePreferences = ["system", "light", "dark"] as const;
 
+export const languagePreferenceSchema = z.object({
+  targetLanguage: z.enum(languageOptions),
+  nativeLanguage: z.enum(languageOptions),
+  currentLevel: z.enum(levels),
+  regionVariant: z.string().max(80).default("")
+});
+
 export const lessonRequestSchema = z.object({
   targetLanguage: z.enum(languageOptions),
   nativeLanguage: z.enum(languageOptions),
@@ -188,10 +195,7 @@ export const profileSettingsSchema = z.object({
     .default(""),
   shortBio: z.string().max(280).default(""),
   learningGoal: z.string().max(320).default(""),
-  targetLanguage: z.enum(languageOptions),
-  nativeLanguage: z.enum(languageOptions),
-  currentLevel: z.enum(levels),
-  regionVariant: z.string().max(80).default(""),
+  ...languagePreferenceSchema.shape,
   fontSize: z.enum(fontSizePreferences).default("default"),
   highContrast: z.boolean().default(false),
   dyslexiaAssist: z.boolean().default(false),

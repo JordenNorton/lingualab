@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { ensureProfileFromUserMetadata, languagePreferencesToMetadata } from "@/lib/profile";
+import { languagePreferenceSchema } from "@/lib/schemas";
 import { createClient } from "@/lib/supabase/server";
 
 function getFormString(formData: FormData, key: string) {
@@ -10,7 +12,7 @@ function getFormString(formData: FormData, key: string) {
   return typeof value === "string" ? value.trim() : "";
 }
 
-function redirectWithMessage(path: string, message: string) {
+function redirectWithMessage(path: string, message: string): never {
   redirect(`${path}?message=${encodeURIComponent(message)}`);
 }
 
@@ -32,6 +34,7 @@ export async function login(formData: FormData) {
     redirectWithMessage("/login", error.message);
   }
 
+  await ensureProfileFromUserMetadata(supabase);
   revalidatePath("/", "layout");
   redirect("/dashboard");
 }
@@ -49,12 +52,24 @@ export async function signup(formData: FormData) {
     redirectWithMessage("/signup", "Use a password with at least 6 characters.");
   }
 
+  const preferences = languagePreferenceSchema.safeParse({
+    targetLanguage: getFormString(formData, "targetLanguage"),
+    nativeLanguage: getFormString(formData, "nativeLanguage"),
+    currentLevel: getFormString(formData, "currentLevel"),
+    regionVariant: getFormString(formData, "regionVariant")
+  });
+
+  if (!preferences.success) {
+    redirectWithMessage("/signup", "Choose your language preferences before creating an account.");
+  }
+
   const supabase = await createClient();
   const { error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      emailRedirectTo: `${origin}/auth/confirm`
+      emailRedirectTo: `${origin}/auth/confirm`,
+      data: languagePreferencesToMetadata(preferences.data)
     }
   });
 

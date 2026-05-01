@@ -1,5 +1,8 @@
 import { clsx } from "clsx";
-import { profileSettingsSchema, type UserProfile } from "@/lib/schemas";
+import type { createClient } from "@/lib/supabase/server";
+import { languagePreferenceSchema, profileSettingsSchema, type UserProfile } from "@/lib/schemas";
+
+type ServerSupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
 export const profileSelect =
   "display_name, profile_picture_url, short_bio, learning_goal, target_language, native_language, current_level, region_variant, font_size, high_contrast, dyslexia_assist, theme_preference, updated_at";
@@ -59,6 +62,80 @@ export function serializeProfile(row?: ProfileRow | null): UserProfile {
     ...(parsed.success ? parsed.data : defaultProfile()),
     updatedAt: row.updated_at ?? undefined
   };
+}
+
+function getMetadataString(metadata: Record<string, unknown>, key: string) {
+  const value = metadata[key];
+  return typeof value === "string" ? value.trim() : "";
+}
+
+export function languagePreferencesFromMetadata(metadata: Record<string, unknown> | null | undefined) {
+  const fallback = defaultProfile();
+  const parsed = languagePreferenceSchema.safeParse({
+    targetLanguage: getMetadataString(metadata ?? {}, "target_language") || fallback.targetLanguage,
+    nativeLanguage: getMetadataString(metadata ?? {}, "native_language") || fallback.nativeLanguage,
+    currentLevel: getMetadataString(metadata ?? {}, "current_level") || fallback.currentLevel,
+    regionVariant: getMetadataString(metadata ?? {}, "region_variant") || fallback.regionVariant
+  });
+
+  return parsed.success
+    ? parsed.data
+    : {
+        targetLanguage: fallback.targetLanguage,
+        nativeLanguage: fallback.nativeLanguage,
+        currentLevel: fallback.currentLevel,
+        regionVariant: fallback.regionVariant
+      };
+}
+
+export function languagePreferencesToMetadata(preferences: ReturnType<typeof languagePreferencesFromMetadata>) {
+  return {
+    target_language: preferences.targetLanguage,
+    native_language: preferences.nativeLanguage,
+    current_level: preferences.currentLevel,
+    region_variant: preferences.regionVariant
+  };
+}
+
+export async function ensureProfileFromUserMetadata(supabase: ServerSupabaseClient) {
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+
+  if (!user) return;
+
+  const { data: existing, error: existingError } = await supabase
+    .from("profiles")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .maybeSingle<{ user_id: string }>();
+
+  if (existing || existingError) return;
+
+  const fallback = defaultProfile();
+  const preferences = languagePreferencesFromMetadata(user.user_metadata);
+
+  await supabase.from("profiles").upsert(
+    {
+      user_id: user.id,
+      display_name: "",
+      profile_picture_url: "",
+      short_bio: "",
+      learning_goal: "",
+      target_language: preferences.targetLanguage,
+      native_language: preferences.nativeLanguage,
+      current_level: preferences.currentLevel,
+      region_variant: preferences.regionVariant,
+      font_size: fallback.fontSize,
+      high_contrast: fallback.highContrast,
+      dyslexia_assist: fallback.dyslexiaAssist,
+      theme_preference: fallback.themePreference,
+      updated_at: new Date().toISOString()
+    },
+    {
+      onConflict: "user_id"
+    }
+  );
 }
 
 export function getProfileDisplayName(profile: UserProfile, email?: string | null) {
