@@ -5,7 +5,7 @@ export const defaultLessonRequest: LessonRequest = {
   nativeLanguage: "English",
   level: "A2",
   contentType: "news-brief",
-  topic: "local food markets and everyday routines",
+  topic: "",
   tone: "warm",
   length: "medium",
   focusArea: "vocabulary",

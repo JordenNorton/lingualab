@@ -239,6 +239,11 @@ export function LanguageLab({
       return;
     }
 
+    if (!request.topic.trim()) {
+      setStatus("Add a topic or interest before generating a lesson.");
+      return;
+    }
+
     setIsGenerating(true);
     setStatus("");
 
@@ -594,6 +599,7 @@ export function LanguageLab({
                   className="min-h-[88px] w-full resize-none rounded-md border border-ink/15 bg-paper/60 px-3 py-2 text-ink outline-none transition focus:border-lagoon focus:ring-2 focus:ring-lagoon/20"
                   value={request.topic}
                   onChange={(event) => updateRequest("topic", event.target.value)}
+                  placeholder="Example: local food markets and everyday routines"
                 />
               </label>
 
