@@ -127,6 +127,8 @@ export default async function AttemptsPage({ searchParams }: AttemptsPageProps) 
     sort: sort === "newest" ? undefined : sort
   };
 
+  if (attemptsError) console.error("Quiz attempt history unavailable", attemptsError);
+
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8">
       <header className="flex flex-col gap-4 border-b border-ink/10 pb-5 sm:flex-row sm:items-center sm:justify-between">
@@ -269,7 +271,7 @@ export default async function AttemptsPage({ searchParams }: AttemptsPageProps) 
 
         {attemptsError ? (
           <p className="mt-5 rounded-md border border-coral/20 bg-coral/10 p-4 text-sm text-ink/70">
-            Run the lesson attempts migration to show quiz history here.
+            Your quiz history could not be loaded right now. Please try again later.
           </p>
         ) : attempts.length ? (
           <div className="mt-5 overflow-hidden rounded-md border border-ink/10">

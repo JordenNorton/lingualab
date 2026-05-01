@@ -56,6 +56,8 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const message = firstValue(params.message);
   const displayName = getProfileDisplayName(profile, user.email);
 
+  if (profileError) console.error("Profile settings unavailable", profileError);
+
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8">
       <header className="flex flex-col gap-4 border-b border-ink/10 pb-5 sm:flex-row sm:items-center sm:justify-between">
@@ -87,7 +89,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       {message ? <p className="rounded-md border border-lagoon/20 bg-lagoon/10 px-4 py-3 text-sm font-semibold text-lagoon">{message}</p> : null}
       {profileError ? (
         <p className="rounded-md border border-coral/20 bg-coral/10 px-4 py-3 text-sm text-ink/70">
-          Run the profiles migration to save settings. You can still review the form defaults here.
+          Your settings could not be loaded right now. Some changes may not save until this is resolved.
         </p>
       ) : null}
 

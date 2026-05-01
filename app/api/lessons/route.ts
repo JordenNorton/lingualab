@@ -3,6 +3,14 @@ import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
+type SavedLessonRow = {
+  id: string;
+  title: string;
+  target_language: string;
+  level: string;
+  created_at: string;
+};
+
 export async function POST(request: Request) {
   const supabase = await createClient();
   const {
@@ -46,14 +54,21 @@ export async function POST(request: Request) {
         onConflict: "user_id,lesson_key"
       }
     )
-    .select("id, created_at")
-    .single();
+    .select("id, title, target_language, level, created_at")
+    .single<SavedLessonRow>();
 
   if (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
 
   return Response.json({
-    savedLesson: data
+    savedLesson: {
+      id: data.id,
+      title: data.title,
+      targetLanguage: data.target_language,
+      level: data.level,
+      createdAt: data.created_at,
+      lesson
+    }
   });
 }

@@ -100,6 +100,10 @@ export default async function DashboardPage() {
     return count + (parsed.success ? parsed.data.vocabulary.length : 0);
   }, 0);
 
+  if (lessonsError) console.error("Dashboard lessons unavailable", lessonsError);
+  if (attemptsError) console.error("Dashboard attempts unavailable", attemptsError);
+  if (writingFeedbackError) console.error("Dashboard writing feedback unavailable", writingFeedbackError);
+
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8">
       <header className="flex flex-col gap-4 border-b border-ink/10 pb-5 sm:flex-row sm:items-center sm:justify-between">
@@ -173,9 +177,7 @@ export default async function DashboardPage() {
           </p>
           {lessonsError ? (
             <div className="mt-5 rounded-md border border-coral/20 bg-coral/10 p-4 text-sm text-ink/70">
-              The lessons table is not ready yet. Run the SQL files in{" "}
-              <code className="rounded bg-white px-1.5 py-0.5">supabase/migrations</code>
-              , then refresh this page.
+              Your saved lessons could not be loaded right now. Please try again later.
             </div>
           ) : savedLessons.length ? (
             <div className="mt-5 space-y-3">
@@ -214,7 +216,7 @@ export default async function DashboardPage() {
             </div>
             {attemptsError ? (
               <p className="mt-4 rounded-md border border-coral/20 bg-coral/10 p-3 text-sm text-ink/70">
-                Run the lesson attempts migration to show quiz history here.
+                Your quiz history could not be loaded right now. Please try again later.
               </p>
             ) : recentAttempts.length ? (
               <div className="mt-4 space-y-3">
@@ -290,7 +292,7 @@ function RecentWritingFeedbackPanel({
       </div>
       {error ? (
         <p className="mt-4 rounded-md border border-coral/20 bg-coral/10 p-3 text-sm text-ink/70">
-          Run the writing feedback migration to show feedback history here.
+          Your writing feedback history could not be loaded right now. Please try again later.
         </p>
       ) : items.length ? (
         <div className="mt-4 space-y-3">

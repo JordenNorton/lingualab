@@ -128,11 +128,13 @@ export function LanguageLab({
   userEmail,
   initialLesson,
   initialAttempts,
+  initialSavedLessons,
   initialRequest
 }: {
   userEmail: string | null;
   initialLesson: Lesson | null;
   initialAttempts: QuizAttempt[];
+  initialSavedLessons: SavedLesson[];
   initialRequest?: LessonRequest | null;
 }) {
   const [request, setRequest] = useState<LessonRequest>(initialRequest ?? defaultLessonRequest);
@@ -145,8 +147,8 @@ export function LanguageLab({
   const [isSavingLesson, setIsSavingLesson] = useState(false);
   const [isSavingAttempt, setIsSavingAttempt] = useState(false);
   const [status, setStatus] = useState("");
-  const [savedLessons, setSavedLessons] = useState<SavedLesson[]>([]);
-  const [attempts, setAttempts] = useState<QuizAttempt[]>(initialAttempts);
+  const [savedLessons, setSavedLessons] = useState<SavedLesson[]>(userEmail ? initialSavedLessons : []);
+  const [attempts, setAttempts] = useState<QuizAttempt[]>(userEmail ? initialAttempts : []);
   const [mcAnswers, setMcAnswers] = useState<Record<string, number>>({});
   const [fillAnswers, setFillAnswers] = useState<Record<string, string>>({});
   const [quizSubmitted, setQuizSubmitted] = useState(false);
@@ -160,14 +162,14 @@ export function LanguageLab({
   const isTextGenerationLocked = !userEmail;
 
   useEffect(() => {
+    if (userEmail) return;
+
     let isMounted = true;
     const timer = window.setTimeout(() => {
       if (!isMounted) return;
 
       setSavedLessons(readLocalStorage<SavedLesson[]>(savedLessonsKey, []));
-      if (!userEmail) {
-        setAttempts(readLocalStorage<QuizAttempt[]>(attemptsKey, []));
-      }
+      setAttempts(readLocalStorage<QuizAttempt[]>(attemptsKey, []));
     }, 0);
 
     return () => {
@@ -270,22 +272,21 @@ export function LanguageLab({
   }
 
   async function saveLesson() {
-    const next: SavedLesson[] = [
-      {
-        id: lesson.id,
-        title: lesson.title,
-        targetLanguage: lesson.targetLanguage,
-        level: lesson.level,
-        createdAt: lesson.createdAt,
-        lesson
-      },
-      ...savedLessons.filter((item) => item.id !== lesson.id)
-    ].slice(0, 12);
-
-    setSavedLessons(next);
-    writeLocalStorage(savedLessonsKey, next);
-
     if (!userEmail) {
+      const next: SavedLesson[] = [
+        {
+          id: lesson.id,
+          title: lesson.title,
+          targetLanguage: lesson.targetLanguage,
+          level: lesson.level,
+          createdAt: lesson.createdAt,
+          lesson
+        },
+        ...savedLessons.filter((item) => item.id !== lesson.id)
+      ].slice(0, 12);
+
+      setSavedLessons(next);
+      writeLocalStorage(savedLessonsKey, next);
       setStatus("Lesson saved to this browser. Log in to save it to your account.");
       return;
     }
@@ -298,12 +299,16 @@ export function LanguageLab({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ lesson })
       });
-      const data = (await response.json()) as { savedLesson?: { id: string }; error?: string };
+      const data = (await response.json()) as { savedLesson?: SavedLesson; error?: string };
 
       if (!response.ok || !data.savedLesson) {
         throw new Error(data.error || "The lesson could not be saved.");
       }
 
+      const savedLesson = data.savedLesson;
+      setSavedLessons((current) =>
+        [savedLesson, ...current.filter((item) => item.id !== savedLesson.id && item.lesson.id !== savedLesson.lesson.id)].slice(0, 12)
+      );
       setStatus("Lesson saved to your account. You can open it from the dashboard.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "The lesson could not be saved.");
@@ -314,7 +319,10 @@ export function LanguageLab({
 
   function loadSavedLesson(savedLesson: SavedLesson) {
     resetLessonState(savedLesson.lesson);
-    setMeta({ mode: "demo", message: "Saved lesson loaded from this browser." });
+    setMeta({
+      mode: "demo",
+      message: userEmail ? "Saved lesson loaded from your account." : "Saved lesson loaded from this browser."
+    });
     setStatus("Saved lesson loaded.");
   }
 
