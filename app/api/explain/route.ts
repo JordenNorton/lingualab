@@ -1,15 +1,16 @@
-import { requireSignedInUser } from "@/lib/api-auth";
+import { getAuthenticatedSupabase } from "@/lib/api-auth";
 import { createDemoExplanation } from "@/lib/demo-lesson";
 import { explanationJsonSchema } from "@/lib/json-schemas";
 import { createOpenAIClient, getOpenAIModel, hasOpenAIKey, parseResponseJson, reasoningForModel } from "@/lib/openai";
 import { buildExplanationInstructions } from "@/lib/prompts";
 import { explanationRequestSchema, explanationSchema } from "@/lib/schemas";
+import { recordUsageEvent } from "@/lib/usage-limits";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  const authError = await requireSignedInUser();
-  if (authError) return authError;
+  const auth = await getAuthenticatedSupabase();
+  if ("response" in auth) return auth.response;
 
   const body = await request.json().catch(() => null);
   const parsed = explanationRequestSchema.safeParse(body);
@@ -24,12 +25,20 @@ export async function POST(request: Request) {
     );
   }
 
+  const usage = await recordUsageEvent(auth.supabase, "explanation");
+  if (!usage.allowed) return usage.response;
+
   if (!hasOpenAIKey()) {
     return Response.json({
       explanation: createDemoExplanation(parsed.data.selectedText, parsed.data.nativeLanguage),
       meta: {
         mode: "demo",
-        message: "Set OPENAI_API_KEY to enable live explanations."
+        message: "Set OPENAI_API_KEY to enable live explanations.",
+        usage: {
+          remaining: usage.remaining,
+          limit: usage.limit,
+          resetAt: usage.resetAt
+        }
       }
     });
   }
@@ -66,7 +75,12 @@ export async function POST(request: Request) {
       explanation,
       meta: {
         mode: "ai",
-        model
+        model,
+        usage: {
+          remaining: usage.remaining,
+          limit: usage.limit,
+          resetAt: usage.resetAt
+        }
       }
     });
   } catch (error) {

@@ -34,6 +34,8 @@ AI-generated reading practice for language learners.
 - [x] Add a filtered quiz attempt history page
 - [x] Store writing feedback history per user
 - [x] Add `profiles` for user language preferences, current level, and accessibility settings
+- [x] Add `usage_events` for per-user daily caps and short cooldowns on credit-using routes
+- [ ] Add profile roles and admin entitlements for unlimited usage and future plan-based allowances
 - [ ] Add `vocabulary_items` for saved terms and review state
 - [ ] Add `review_events` for spaced repetition scheduling
 - [ ] Add reminders with Supabase Cron or Edge Functions
@@ -77,7 +79,7 @@ Auth routes:
 
 Run the SQL files in `supabase/migrations` from the Supabase SQL editor.
 
-This creates the `public.profiles`, `public.lessons`, `public.lesson_attempts`, and `public.writing_feedback` tables with row-level security policies so each authenticated user can only read and write their own learning data.
+This creates the `public.profiles`, `public.lessons`, `public.lesson_attempts`, `public.writing_feedback`, and `public.usage_events` tables with row-level security policies so each authenticated user can only read and write their own learning data.
 
 ## Production
 
@@ -96,6 +98,8 @@ Phase 2 is now mostly complete. The remaining work has moved into Phase 3: movin
 - `lessons`: generated texts and workbook JSON, already implemented for saved lessons
 - `lesson_attempts`: quiz scores and timestamps, already implemented
 - `writing_feedback`: writing prompt answers and feedback results, already implemented
+- `usage_events`: per-user credit usage ledger with daily caps and cooldowns, already implemented
+- `profile roles`: future admin and plan-based entitlement handling
 - `vocabulary_items`: saved terms and review state
 - `review_events`: spaced repetition schedule
 

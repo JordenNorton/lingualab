@@ -5,6 +5,7 @@ import { workbookFeedbackJsonSchema } from "@/lib/json-schemas";
 import { createOpenAIClient, getOpenAIModel, hasOpenAIKey, parseResponseJson, reasoningForModel } from "@/lib/openai";
 import { buildWorkbookFeedbackInstructions } from "@/lib/prompts";
 import { workbookCheckRequestSchema, workbookFeedbackSchema } from "@/lib/schemas";
+import { recordUsageEvent } from "@/lib/usage-limits";
 
 export const runtime = "nodejs";
 
@@ -27,6 +28,9 @@ export async function POST(request: Request) {
     );
   }
 
+  const usage = await recordUsageEvent(auth.supabase, "writing_feedback");
+  if (!usage.allowed) return usage.response;
+
   try {
     const model = hasOpenAIKey() ? getOpenAIModel() : null;
     const feedback = model ? await createWorkbookFeedback(parsed.data, model) : createDemoWorkbookFeedback();
@@ -34,11 +38,21 @@ export async function POST(request: Request) {
       ? {
           mode: "ai" as const,
           model,
-          message: "Writing feedback saved to your account."
+          message: "Writing feedback saved to your account.",
+          usage: {
+            remaining: usage.remaining,
+            limit: usage.limit,
+            resetAt: usage.resetAt
+          }
         }
       : {
           mode: "demo" as const,
-          message: "Demo writing feedback saved to your account. Set OPENAI_API_KEY to enable live feedback."
+          message: "Demo writing feedback saved to your account. Set OPENAI_API_KEY to enable live feedback.",
+          usage: {
+            remaining: usage.remaining,
+            limit: usage.limit,
+            resetAt: usage.resetAt
+          }
         };
 
     const { data: savedFeedback, error } = await auth.supabase

@@ -1,15 +1,16 @@
-import { requireSignedInUser } from "@/lib/api-auth";
+import { getAuthenticatedSupabase } from "@/lib/api-auth";
 import { createDemoLesson } from "@/lib/demo-lesson";
 import { lessonResponseJsonSchema } from "@/lib/json-schemas";
 import { createOpenAIClient, getOpenAIModel, hasOpenAIKey, parseResponseJson, reasoningForModel } from "@/lib/openai";
 import { buildLessonInstructions, buildLessonPrompt } from "@/lib/prompts";
 import { lessonRequestSchema, lessonSchema } from "@/lib/schemas";
+import { recordUsageEvent } from "@/lib/usage-limits";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  const authError = await requireSignedInUser();
-  if (authError) return authError;
+  const auth = await getAuthenticatedSupabase();
+  if ("response" in auth) return auth.response;
 
   const body = await request.json().catch(() => null);
   const parsed = lessonRequestSchema.safeParse(body);
@@ -24,12 +25,20 @@ export async function POST(request: Request) {
     );
   }
 
+  const usage = await recordUsageEvent(auth.supabase, "lesson_generation");
+  if (!usage.allowed) return usage.response;
+
   if (!hasOpenAIKey()) {
     return Response.json({
       lesson: createDemoLesson(parsed.data),
       meta: {
         mode: "demo",
-        message: "Set OPENAI_API_KEY to generate live lessons."
+        message: "Set OPENAI_API_KEY to generate live lessons.",
+        usage: {
+          remaining: usage.remaining,
+          limit: usage.limit,
+          resetAt: usage.resetAt
+        }
       }
     });
   }
@@ -61,7 +70,12 @@ export async function POST(request: Request) {
       lesson,
       meta: {
         mode: "ai",
-        model
+        model,
+        usage: {
+          remaining: usage.remaining,
+          limit: usage.limit,
+          resetAt: usage.resetAt
+        }
       }
     });
   } catch (error) {
