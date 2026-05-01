@@ -2,6 +2,41 @@ import { z } from "zod";
 
 export const levels = ["A1", "A2", "B1", "B2", "C1", "C2"] as const;
 
+export const languageOptions = [
+  "English",
+  "Spanish",
+  "French",
+  "German",
+  "Italian",
+  "Portuguese",
+  "Dutch",
+  "Swedish",
+  "Norwegian",
+  "Danish",
+  "Polish",
+  "Czech",
+  "Romanian",
+  "Hungarian",
+  "Greek",
+  "Russian",
+  "Ukrainian",
+  "Turkish",
+  "Arabic",
+  "Hebrew",
+  "Persian",
+  "Hindi",
+  "Bengali",
+  "Urdu",
+  "Mandarin Chinese",
+  "Japanese",
+  "Korean",
+  "Vietnamese",
+  "Thai",
+  "Indonesian",
+  "Malay",
+  "Swahili"
+] as const;
+
 export const contentTypes = [
   "news-brief",
   "short-story",
@@ -18,8 +53,8 @@ export const fontSizePreferences = ["small", "default", "large", "extra-large"] 
 export const themePreferences = ["system", "light", "dark"] as const;
 
 export const lessonRequestSchema = z.object({
-  targetLanguage: z.string().min(2).max(60),
-  nativeLanguage: z.string().min(2).max(60),
+  targetLanguage: z.enum(languageOptions),
+  nativeLanguage: z.enum(languageOptions),
   level: z.enum(levels),
   contentType: z.enum(contentTypes),
   topic: z.string().min(2).max(160),
@@ -153,8 +188,8 @@ export const profileSettingsSchema = z.object({
     .default(""),
   shortBio: z.string().max(280).default(""),
   learningGoal: z.string().max(320).default(""),
-  targetLanguage: z.string().min(2).max(60),
-  nativeLanguage: z.string().min(2).max(60),
+  targetLanguage: z.enum(languageOptions),
+  nativeLanguage: z.enum(languageOptions),
   currentLevel: z.enum(levels),
   regionVariant: z.string().max(80).default(""),
   fontSize: z.enum(fontSizePreferences).default("default"),

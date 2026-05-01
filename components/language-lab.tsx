@@ -26,7 +26,7 @@ import type { TouchEvent } from "react";
 import { clsx } from "clsx";
 import { defaultLessonRequest, demoLesson } from "@/lib/demo-lesson";
 import type { Explanation, Lesson, LessonRequest, QuizAttempt, WorkbookFeedback } from "@/lib/schemas";
-import { contentTypes, focusAreas, lengths, levels, tones } from "@/lib/schemas";
+import { contentTypes, focusAreas, languageOptions, lengths, levels, tones } from "@/lib/schemas";
 
 const savedLessonsKey = "lingualab.savedLessons.v1";
 const attemptsKey = "lingualab.attempts.v1";
@@ -509,19 +509,31 @@ export function LanguageLab({
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
                 <label className="space-y-1.5">
                   <span className="text-sm font-medium text-ink/75">Learning</span>
-                  <input
+                  <select
                     className="h-11 w-full rounded-md border border-ink/15 bg-paper/60 px-3 text-ink outline-none transition focus:border-lagoon focus:ring-2 focus:ring-lagoon/20"
                     value={request.targetLanguage}
-                    onChange={(event) => updateRequest("targetLanguage", event.target.value)}
-                  />
+                    onChange={(event) => updateRequest("targetLanguage", event.target.value as LessonRequest["targetLanguage"])}
+                  >
+                    {languageOptions.map((language) => (
+                      <option key={language} value={language}>
+                        {language}
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <label className="space-y-1.5">
                   <span className="text-sm font-medium text-ink/75">Native</span>
-                  <input
+                  <select
                     className="h-11 w-full rounded-md border border-ink/15 bg-paper/60 px-3 text-ink outline-none transition focus:border-lagoon focus:ring-2 focus:ring-lagoon/20"
                     value={request.nativeLanguage}
-                    onChange={(event) => updateRequest("nativeLanguage", event.target.value)}
-                  />
+                    onChange={(event) => updateRequest("nativeLanguage", event.target.value as LessonRequest["nativeLanguage"])}
+                  >
+                    {languageOptions.map((language) => (
+                      <option key={language} value={language}>
+                        {language}
+                      </option>
+                    ))}
+                  </select>
                 </label>
               </div>
 

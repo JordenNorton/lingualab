@@ -9,7 +9,7 @@ import {
   serializeProfile,
   type ProfileRow
 } from "@/lib/profile";
-import { fontSizePreferences, levels, themePreferences, type UserProfile } from "@/lib/schemas";
+import { fontSizePreferences, languageOptions, levels, themePreferences, type UserProfile } from "@/lib/schemas";
 import { createClient } from "@/lib/supabase/server";
 
 type SettingsPageProps = {
@@ -127,8 +127,8 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
           <section className="rounded-lg border border-ink/10 bg-white p-5 shadow-soft">
             <h2 className="text-xl font-semibold text-ink">Language Learning</h2>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <TextField label="Learning language" name="targetLanguage" defaultValue={profile.targetLanguage} maxLength={60} />
-              <TextField label="Native language" name="nativeLanguage" defaultValue={profile.nativeLanguage} maxLength={60} />
+              <LanguageField label="Learning language" name="targetLanguage" defaultValue={profile.targetLanguage} />
+              <LanguageField label="Native language" name="nativeLanguage" defaultValue={profile.nativeLanguage} />
               <label className="space-y-1.5">
                 <span className="text-sm font-medium text-ink/70">Current level</span>
                 <select
@@ -258,6 +258,33 @@ function TextField({
         placeholder={placeholder}
         type={type}
       />
+    </label>
+  );
+}
+
+function LanguageField({
+  label,
+  name,
+  defaultValue
+}: {
+  label: string;
+  name: string;
+  defaultValue: string;
+}) {
+  return (
+    <label className="space-y-1.5">
+      <span className="text-sm font-medium text-ink/70">{label}</span>
+      <select
+        className="h-11 w-full rounded-md border border-ink/15 bg-paper/60 px-3 text-ink outline-none transition focus:border-lagoon focus:ring-2 focus:ring-lagoon/20"
+        name={name}
+        defaultValue={defaultValue}
+      >
+        {languageOptions.map((language) => (
+          <option key={language} value={language}>
+            {language}
+          </option>
+        ))}
+      </select>
     </label>
   );
 }
