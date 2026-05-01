@@ -14,6 +14,8 @@ export const contentTypes = [
 export const tones = ["natural", "warm", "formal", "playful", "journalistic"] as const;
 export const lengths = ["short", "medium", "long"] as const;
 export const focusAreas = ["vocabulary", "grammar", "idioms", "conversation", "exam-practice"] as const;
+export const fontSizePreferences = ["small", "default", "large", "extra-large"] as const;
+export const themePreferences = ["system", "light", "dark"] as const;
 
 export const lessonRequestSchema = z.object({
   targetLanguage: z.string().min(2).max(60),
@@ -140,9 +142,36 @@ export const writingFeedbackHistorySchema = workbookCheckRequestSchema.extend({
   createdAt: z.string()
 });
 
+export const profileSettingsSchema = z.object({
+  displayName: z.string().max(80).default(""),
+  profilePictureUrl: z
+    .string()
+    .max(500)
+    .refine((value) => !value || /^https?:\/\/\S+$/i.test(value), {
+      message: "Use a full image URL that starts with http:// or https://."
+    })
+    .default(""),
+  shortBio: z.string().max(280).default(""),
+  learningGoal: z.string().max(320).default(""),
+  targetLanguage: z.string().min(2).max(60),
+  nativeLanguage: z.string().min(2).max(60),
+  currentLevel: z.enum(levels),
+  regionVariant: z.string().max(80).default(""),
+  fontSize: z.enum(fontSizePreferences).default("default"),
+  highContrast: z.boolean().default(false),
+  dyslexiaAssist: z.boolean().default(false),
+  themePreference: z.enum(themePreferences).default("system")
+});
+
+export const userProfileSchema = profileSettingsSchema.extend({
+  updatedAt: z.string().optional()
+});
+
 export type LessonRequest = z.infer<typeof lessonRequestSchema>;
 export type Lesson = z.infer<typeof lessonSchema>;
 export type Explanation = z.infer<typeof explanationSchema>;
 export type WorkbookFeedback = z.infer<typeof workbookFeedbackSchema>;
 export type QuizAttempt = z.infer<typeof quizAttemptSchema>;
 export type WritingFeedbackHistory = z.infer<typeof writingFeedbackHistorySchema>;
+export type ProfileSettings = z.infer<typeof profileSettingsSchema>;
+export type UserProfile = z.infer<typeof userProfileSchema>;

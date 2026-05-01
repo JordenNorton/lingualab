@@ -298,7 +298,7 @@ export default async function WritingFeedbackPage({ searchParams }: WritingFeedb
                 <Link
                   key={item.id}
                   href={`/dashboard/writing-feedback/${item.id}`}
-                  className="grid gap-2 px-4 py-3 text-sm transition hover:bg-paper/70 md:grid-cols-[minmax(0,1fr)_120px_90px_90px_120px] md:items-center md:gap-3"
+                  className="feedback-row grid gap-2 border-l-2 border-transparent px-4 py-3 text-sm transition hover:border-lagoon/60 md:grid-cols-[minmax(0,1fr)_120px_90px_90px_120px] md:items-center md:gap-3"
                 >
                   <div className="min-w-0">
                     <p className="truncate font-semibold text-ink">{item.title}</p>

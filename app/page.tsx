@@ -1,5 +1,7 @@
 import { LanguageLab } from "@/components/language-lab";
-import { lessonSchema, quizAttemptSchema, type QuizAttempt } from "@/lib/schemas";
+import { defaultLessonRequest } from "@/lib/demo-lesson";
+import { profileSelect, serializeProfile, type ProfileRow } from "@/lib/profile";
+import { lessonSchema, quizAttemptSchema, type LessonRequest, type QuizAttempt } from "@/lib/schemas";
 import { createClient } from "@/lib/supabase/server";
 
 type HomePageProps = {
@@ -39,6 +41,7 @@ export default async function Home({ searchParams }: HomePageProps) {
 
   let initialLesson = null;
   let initialAttempts: QuizAttempt[] = [];
+  let initialRequest: LessonRequest = defaultLessonRequest;
 
   if (user && savedLessonId) {
     const { data } = await supabase
@@ -53,6 +56,21 @@ export default async function Home({ searchParams }: HomePageProps) {
   }
 
   if (user) {
+    const { data: profileData } = await supabase
+      .from("profiles")
+      .select(profileSelect)
+      .eq("user_id", user.id)
+      .maybeSingle<ProfileRow>();
+    const profile = serializeProfile(profileData);
+
+    initialRequest = {
+      ...defaultLessonRequest,
+      targetLanguage: profile.targetLanguage,
+      nativeLanguage: profile.nativeLanguage,
+      level: profile.currentLevel,
+      regionVariant: profile.regionVariant
+    };
+
     const { data } = await supabase
       .from("lesson_attempts")
       .select("lesson_key, title, target_language, level, score, created_at")
@@ -67,5 +85,12 @@ export default async function Home({ searchParams }: HomePageProps) {
     });
   }
 
-  return <LanguageLab userEmail={user?.email ?? null} initialLesson={initialLesson} initialAttempts={initialAttempts} />;
+  return (
+    <LanguageLab
+      userEmail={user?.email ?? null}
+      initialLesson={initialLesson}
+      initialAttempts={initialAttempts}
+      initialRequest={initialRequest}
+    />
+  );
 }

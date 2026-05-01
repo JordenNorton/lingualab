@@ -1,6 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { logout } from "@/lib/auth-actions";
+import {
+  getProfileDisplayName,
+  getProfileInitials,
+  profileSelect,
+  serializeProfile,
+  type ProfileRow
+} from "@/lib/profile";
 import { lessonSchema } from "@/lib/schemas";
 import { createClient } from "@/lib/supabase/server";
 
@@ -46,6 +53,12 @@ export default async function DashboardPage() {
     redirect("/login?message=Log in to view your dashboard.");
   }
 
+  const { data: profileData } = await supabase
+    .from("profiles")
+    .select(profileSelect)
+    .eq("user_id", user.id)
+    .maybeSingle<ProfileRow>();
+
   const { data: lessons, error: lessonsError } = await supabase
     .from("lessons")
     .select("id, title, target_language, level, content_type, lesson, created_at")
@@ -80,6 +93,8 @@ export default async function DashboardPage() {
   const savedLessons = lessons ?? [];
   const recentAttempts = attempts ?? [];
   const recentWritingFeedback = writingFeedback ?? [];
+  const profile = serializeProfile(profileData);
+  const displayName = getProfileDisplayName(profile, user.email);
   const vocabularyCount = savedLessons.reduce((count, savedLesson) => {
     const parsed = lessonSchema.safeParse(savedLesson.lesson);
     return count + (parsed.success ? parsed.data.vocabulary.length : 0);
@@ -102,6 +117,12 @@ export default async function DashboardPage() {
           >
             Generate lesson
           </Link>
+          <Link
+            href="/dashboard/settings"
+            className="flex h-10 items-center rounded-md border border-ink/15 px-3 text-sm font-medium text-ink transition hover:border-lagoon/50 hover:text-lagoon"
+          >
+            Settings
+          </Link>
           <form action={logout}>
             <button
               type="submit"
@@ -112,6 +133,30 @@ export default async function DashboardPage() {
           </form>
         </div>
       </header>
+
+      <section className="overflow-hidden rounded-lg border border-ink/10 bg-white shadow-soft">
+        <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center">
+            <Avatar profile={profile} email={user.email} />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold uppercase tracking-normal text-lagoon">Welcome back</p>
+              <h2 className="mt-1 text-3xl font-semibold text-ink">{displayName}</h2>
+              <p className="mt-2 max-w-2xl text-sm text-ink/65">
+                {profile.learningGoal || `Ready for your next ${profile.targetLanguage} session?`}
+              </p>
+              {profile.shortBio ? <p className="mt-2 max-w-2xl text-sm text-ink/55">{profile.shortBio}</p> : null}
+            </div>
+          </div>
+          <div className="flex shrink-0 flex-wrap gap-2 text-xs font-semibold">
+            <span className="rounded-md bg-lagoon/10 px-2.5 py-1 text-lagoon">{profile.targetLanguage}</span>
+            <span className="rounded-md bg-coral/10 px-2.5 py-1 text-coral">{profile.currentLevel}</span>
+            <span className="rounded-md bg-saffron/10 px-2.5 py-1 text-saffron">{profile.nativeLanguage}</span>
+            <Link href="/dashboard/settings" className="rounded-md border border-ink/10 px-2.5 py-1 text-ink/60 transition hover:border-lagoon/40 hover:text-lagoon">
+              Edit profile
+            </Link>
+          </div>
+        </div>
+      </section>
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <DashboardMetric label="Saved lessons" value={String(savedLessons.length)} />
@@ -194,44 +239,10 @@ export default async function DashboardPage() {
             )}
           </aside>
 
-          <aside className="rounded-lg border border-ink/10 bg-white p-5 shadow-soft">
-            <div className="flex items-start justify-between gap-3">
-              <h2 className="text-xl font-semibold text-ink">Recent Writing Feedback</h2>
-              <Link href="/dashboard/writing-feedback" className="shrink-0 text-sm font-semibold text-lagoon">
-                Show more
-              </Link>
-            </div>
-            {writingFeedbackError ? (
-              <p className="mt-4 rounded-md border border-coral/20 bg-coral/10 p-3 text-sm text-ink/70">
-                Run the writing feedback migration to show feedback history here.
-              </p>
-            ) : recentWritingFeedback.length ? (
-              <div className="mt-4 space-y-3">
-                {recentWritingFeedback.map((item) => (
-                  <Link
-                    key={item.id}
-                    href={`/dashboard/writing-feedback/${item.id}`}
-                    className="block rounded-md border border-ink/10 bg-paper/55 p-3 transition hover:border-lagoon/40 hover:bg-paper/80"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <p className="min-w-0 truncate font-semibold text-ink">{item.title}</p>
-                      <span className="shrink-0 rounded-md bg-coral/10 px-2 py-1 text-xs font-semibold text-coral">
-                        {item.score}/100
-                      </span>
-                    </div>
-                    <p className="mt-1 line-clamp-2 text-sm text-ink/62">{item.prompt}</p>
-                    <p className="mt-2 text-sm text-ink/58">
-                      {item.target_language} | {item.level} | {formatDate(item.created_at)}
-                    </p>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <p className="mt-4 rounded-md border border-dashed border-ink/20 bg-paper/50 p-4 text-sm text-ink/55">
-                No writing feedback yet.
-              </p>
-            )}
-          </aside>
+          <RecentWritingFeedbackPanel
+            error={writingFeedbackError}
+            items={recentWritingFeedback}
+          />
         </div>
       </section>
     </main>
@@ -258,6 +269,71 @@ function DashboardMetric({ label, value }: { label: string; value: string }) {
     <div className="rounded-lg border border-ink/10 bg-white p-5 shadow-soft">
       <p className="text-sm font-medium text-ink/55">{label}</p>
       <p className="mt-2 text-3xl font-semibold text-ink">{value}</p>
+    </div>
+  );
+}
+
+function RecentWritingFeedbackPanel({
+  error,
+  items
+}: {
+  error: unknown;
+  items: WritingFeedbackRow[];
+}) {
+  return (
+    <aside className="rounded-lg border border-ink/10 bg-white p-5 shadow-soft">
+      <div className="flex items-start justify-between gap-3">
+        <h2 className="text-xl font-semibold text-ink">Recent Writing Feedback</h2>
+        <Link href="/dashboard/writing-feedback" className="shrink-0 text-sm font-semibold text-lagoon">
+          Show more
+        </Link>
+      </div>
+      {error ? (
+        <p className="mt-4 rounded-md border border-coral/20 bg-coral/10 p-3 text-sm text-ink/70">
+          Run the writing feedback migration to show feedback history here.
+        </p>
+      ) : items.length ? (
+        <div className="mt-4 space-y-3">
+          {items.map((item) => (
+            <article key={item.id} className="dashboard-feedback-card rounded-md border border-ink/10 transition-colors hover:border-lagoon/40">
+              <Link href={`/dashboard/writing-feedback/${item.id}`} className="block p-3 no-underline">
+                <span className="flex items-start justify-between gap-3">
+                  <span className="min-w-0 truncate font-semibold text-ink">{item.title}</span>
+                  <span className="shrink-0 rounded-md bg-coral/10 px-2 py-1 text-xs font-semibold text-coral">
+                    {item.score}/100
+                  </span>
+                </span>
+                <span className="mt-1 block line-clamp-2 text-sm text-ink/62">{item.prompt}</span>
+                <span className="mt-2 block text-sm text-ink/58">
+                  {item.target_language} | {item.level} | {formatDate(item.created_at)}
+                </span>
+              </Link>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <p className="mt-4 rounded-md border border-dashed border-ink/20 bg-paper/50 p-4 text-sm text-ink/55">
+          No writing feedback yet.
+        </p>
+      )}
+    </aside>
+  );
+}
+
+function Avatar({ profile, email }: { profile: ReturnType<typeof serializeProfile>; email?: string | null }) {
+  if (profile.profilePictureUrl) {
+    return (
+      <div
+        aria-hidden="true"
+        className="h-20 w-20 shrink-0 rounded-lg bg-ink bg-cover bg-center text-paper"
+        style={{ backgroundImage: `url("${profile.profilePictureUrl.replace(/"/g, "%22")}")` }}
+      />
+    );
+  }
+
+  return (
+    <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg bg-ink text-2xl font-semibold text-paper">
+      {getProfileInitials(profile, email)}
     </div>
   );
 }

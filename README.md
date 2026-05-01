@@ -33,7 +33,7 @@ AI-generated reading practice for language learners.
 - [x] Move quiz attempts from browser `localStorage` into Supabase
 - [x] Add a filtered quiz attempt history page
 - [x] Store writing feedback history per user
-- [ ] Add `profiles` for user language preferences and current level
+- [x] Add `profiles` for user language preferences, current level, and accessibility settings
 - [ ] Add `vocabulary_items` for saved terms and review state
 - [ ] Add `review_events` for spaced repetition scheduling
 - [ ] Add reminders with Supabase Cron or Edge Functions
@@ -45,7 +45,7 @@ AI-generated reading practice for language learners.
 - Tailwind CSS
 - OpenAI Responses API
 - Supabase Auth
-- Supabase Postgres with row-level security for saved lessons, quiz attempts, and writing feedback
+- Supabase Postgres with row-level security for profiles, saved lessons, quiz attempts, and writing feedback
 - Browser `localStorage` for logged-out demo progress fallback
 
 ## Local Setup
@@ -77,7 +77,7 @@ Auth routes:
 
 Run the SQL files in `supabase/migrations` from the Supabase SQL editor.
 
-This creates the `public.lessons`, `public.lesson_attempts`, and `public.writing_feedback` tables with row-level security policies so each authenticated user can only read and write their own learning data.
+This creates the `public.profiles`, `public.lessons`, `public.lesson_attempts`, and `public.writing_feedback` tables with row-level security policies so each authenticated user can only read and write their own learning data.
 
 ## Production
 
@@ -92,7 +92,7 @@ The easiest hosting path is Vercel. Add `OPENAI_API_KEY` and `OPENAI_MODEL` as p
 
 Phase 2 is now mostly complete. The remaining work has moved into Phase 3: moving local progress into Supabase.
 
-- `profiles`: user language preferences and current level
+- `profiles`: user language preferences, current level, accessibility settings, and dashboard personalization, already implemented
 - `lessons`: generated texts and workbook JSON, already implemented for saved lessons
 - `lesson_attempts`: quiz scores and timestamps, already implemented
 - `writing_feedback`: writing prompt answers and feedback results, already implemented

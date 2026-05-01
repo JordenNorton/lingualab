@@ -127,13 +127,15 @@ function createQuizSignature(lesson: Lesson, mcAnswers: Record<string, number>, 
 export function LanguageLab({
   userEmail,
   initialLesson,
-  initialAttempts
+  initialAttempts,
+  initialRequest
 }: {
   userEmail: string | null;
   initialLesson: Lesson | null;
   initialAttempts: QuizAttempt[];
+  initialRequest?: LessonRequest | null;
 }) {
-  const [request, setRequest] = useState<LessonRequest>(defaultLessonRequest);
+  const [request, setRequest] = useState<LessonRequest>(initialRequest ?? defaultLessonRequest);
   const [lesson, setLesson] = useState<Lesson>(initialLesson ?? demoLesson);
   const [meta, setMeta] = useState<ApiMeta>({
     mode: "demo",
