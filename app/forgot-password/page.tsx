@@ -1,15 +1,15 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { login } from "@/lib/auth-actions";
+import { requestPasswordReset } from "@/lib/auth-actions";
 import { createClient } from "@/lib/supabase/server";
 
-type LoginPageProps = {
+type ForgotPasswordPageProps = {
   searchParams: Promise<{
     message?: string;
   }>;
 };
 
-export default async function LoginPage({ searchParams }: LoginPageProps) {
+export default async function ForgotPasswordPage({ searchParams }: ForgotPasswordPageProps) {
   const supabase = await createClient();
   const {
     data: { user }
@@ -27,12 +27,12 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <Link href="/" className="mb-6 inline-flex text-sm font-semibold text-lagoon">
           LinguaLab
         </Link>
-        <h1 className="text-2xl font-semibold text-ink">Log in</h1>
-        <p className="mt-2 text-sm text-ink/62">Continue your lessons, saved texts, and future progress history.</p>
+        <h1 className="text-2xl font-semibold text-ink">Reset password</h1>
+        <p className="mt-2 text-sm text-ink/62">Enter your email and we&apos;ll send a secure link to choose a new password.</p>
 
         {message ? <p className="mt-4 rounded-md bg-saffron/10 px-3 py-2 text-sm text-ink/75">{message}</p> : null}
 
-        <form action={login} className="mt-6 space-y-4">
+        <form action={requestPasswordReset} className="mt-6 space-y-4">
           <label className="block space-y-1.5">
             <span className="text-sm font-medium text-ink/75">Email</span>
             <input
@@ -43,39 +43,18 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               required
             />
           </label>
-          <label className="block space-y-1.5">
-            <span className="flex items-center justify-between gap-3 text-sm font-medium text-ink/75">
-              <span>Password</span>
-              <Link href="/forgot-password" className="text-xs font-semibold text-lagoon">
-                Forgot password?
-              </Link>
-            </span>
-            <input
-              className="h-11 w-full rounded-md border border-ink/15 bg-paper/60 px-3 text-ink outline-none transition focus:border-lagoon focus:ring-2 focus:ring-lagoon/20"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-            />
-          </label>
           <button
             type="submit"
             className="flex h-11 w-full items-center justify-center rounded-md bg-ink px-4 font-semibold text-white transition hover:bg-graphite"
           >
-            Log in
+            Send reset link
           </button>
         </form>
 
         <p className="mt-5 text-sm text-ink/62">
-          New here?{" "}
-          <Link href="/signup" className="font-semibold text-lagoon">
-            Create an account
-          </Link>
-        </p>
-        <p className="mt-2 text-sm text-ink/62">
-          Need a new confirmation email?{" "}
-          <Link href="/resend-confirmation" className="font-semibold text-lagoon">
-            Resend confirmation
+          Remembered it?{" "}
+          <Link href="/login" className="font-semibold text-lagoon">
+            Log in
           </Link>
         </p>
       </section>

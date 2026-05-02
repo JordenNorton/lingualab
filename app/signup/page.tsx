@@ -125,6 +125,12 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
             Log in
           </Link>
         </p>
+        <p className="mt-2 text-sm text-ink/62">
+          Already signed up?{" "}
+          <Link href="/resend-confirmation" className="font-semibold text-lagoon">
+            Resend confirmation email
+          </Link>
+        </p>
       </section>
     </main>
   );

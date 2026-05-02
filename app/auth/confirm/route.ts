@@ -3,12 +3,16 @@ import { redirect } from "next/navigation";
 import { ensureProfileFromUserMetadata } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/server";
 
+function getSafeNext(value: string | null) {
+  return value?.startsWith("/") && !value.startsWith("//") ? value : "/dashboard";
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
   const tokenHash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
-  const next = searchParams.get("next") ?? "/dashboard";
+  const next = getSafeNext(searchParams.get("next"));
   const supabase = await createClient();
 
   if (code) {
