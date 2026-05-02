@@ -59,11 +59,16 @@ export default async function DashboardPage() {
     .eq("user_id", user.id)
     .maybeSingle<ProfileRow>();
 
-  const { data: lessons, error: lessonsError } = await supabase
+  const {
+    data: lessons,
+    count: lessonsCount,
+    error: lessonsError
+  } = await supabase
     .from("lessons")
-    .select("id, title, target_language, level, content_type, lesson, created_at")
+    .select("id, title, target_language, level, content_type, lesson, created_at", { count: "exact" })
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
+    .limit(dashboardPreviewLimit)
     .returns<SavedLessonRow[]>();
 
   const {
@@ -163,17 +168,17 @@ export default async function DashboardPage() {
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <DashboardMetric label="Saved lessons" value={String(savedLessons.length)} />
+        <DashboardMetric label="Saved lessons" value={String(lessonsCount ?? savedLessons.length)} />
         <DashboardMetric label="Quiz attempts" value={String(attemptsCount ?? recentAttempts.length)} />
         <DashboardMetric label="Writing feedback" value={String(writingFeedbackCount ?? recentWritingFeedback.length)} />
-        <DashboardMetric label="Vocabulary terms" value={String(vocabularyCount)} />
+        <DashboardMetric label="Recent terms" value={String(vocabularyCount)} />
       </section>
 
       <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="rounded-lg border border-ink/10 bg-white p-5 shadow-soft">
-          <h2 className="text-xl font-semibold text-ink">Learning history</h2>
+          <h2 className="text-xl font-semibold text-ink">Recent Saved Lessons</h2>
           <p className="mt-2 text-sm text-ink/62">
-            Saved lessons appear here as soon as you save them from the generator.
+            Your latest saved lessons appear here as soon as you save them from the generator.
           </p>
           {lessonsError ? (
             <div className="mt-5 rounded-md border border-coral/20 bg-coral/10 p-4 text-sm text-ink/70">
