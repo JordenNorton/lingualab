@@ -52,7 +52,10 @@ AI-generated reading practice for language learners.
 
 ## Local Setup
 
+Use Node 22 before installing dependencies. The project includes an `.nvmrc` for this:
+
 ```bash
+nvm use
 npm install --legacy-peer-deps --cache ./.npm-cache
 cp .env.example .env.local
 npm run dev
