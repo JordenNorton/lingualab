@@ -13,6 +13,7 @@ import {
   History,
   Lightbulb,
   Loader2,
+  Maximize2,
   MessageSquareText,
   Newspaper,
   PenLine,
@@ -196,6 +197,7 @@ export function LanguageLab({
   const [writingAnswer, setWritingAnswer] = useState("");
   const [feedback, setFeedback] = useState<WorkbookFeedback | null>(null);
   const [isCheckingWriting, setIsCheckingWriting] = useState(false);
+  const [isReadingModalOpen, setIsReadingModalOpen] = useState(false);
   const isTextGenerationLocked = !userEmail;
 
   useEffect(() => {
@@ -214,6 +216,24 @@ export function LanguageLab({
       window.clearTimeout(timer);
     };
   }, [userEmail]);
+
+  useEffect(() => {
+    if (!isReadingModalOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setIsReadingModalOpen(false);
+    }
+
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isReadingModalOpen]);
 
   const readingText = useMemo(
     () =>
@@ -818,26 +838,8 @@ export function LanguageLab({
                 {isSavingLesson ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} aria-hidden="true" />}
                 {isSavingLesson ? "Saving" : "Save"}
               </button>
-              <button
-                type="button"
-                className="flex h-10 items-center gap-2 rounded-md bg-lagoon px-3 text-sm font-medium text-white transition hover:bg-[#176b68] disabled:cursor-not-allowed disabled:opacity-65"
-                onClick={explainSelection}
-                onTouchEnd={(event) => {
-                  if (!isExplaining && !isTextGenerationLocked) activateOnTouch(event, explainSelection);
-                }}
-                disabled={isExplaining || isTextGenerationLocked}
-              >
-                {isExplaining ? <Loader2 size={16} className="animate-spin" /> : <Lightbulb size={16} />}
-                Explain selection
-              </button>
             </div>
           </div>
-
-          {explanation ? (
-            <div className="border-b border-ink/10 bg-saffron/5 p-5 lg:px-7" aria-live="polite">
-              <ExplanationDetails explanation={explanation} selectedText={selectedText} />
-            </div>
-          ) : null}
 
           <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_320px]">
             <article className="min-w-0 p-5 lg:p-7">
@@ -848,9 +850,20 @@ export function LanguageLab({
               </div>
 
               <section>
-                <div className="mb-4 flex items-center gap-2">
-                  <BookOpen size={20} className="text-lagoon" aria-hidden="true" />
-                  <h3 className="text-xl font-semibold text-ink">Reading</h3>
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <BookOpen size={20} className="text-lagoon" aria-hidden="true" />
+                    <h3 className="text-xl font-semibold text-ink">Reading</h3>
+                  </div>
+                  <button
+                    type="button"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-ink/10 bg-white text-ink/58 transition hover:border-lagoon/35 hover:text-lagoon"
+                    onClick={() => setIsReadingModalOpen(true)}
+                    aria-label="Open reading in focused view"
+                    title="Open focused reader"
+                  >
+                    <Maximize2 size={16} aria-hidden="true" />
+                  </button>
                 </div>
                 <div className="reading-text rounded-lg border border-ink/10 bg-paper/55 p-5 text-[1.05rem] text-ink">
                   {lesson.textSections.map((section) => (
@@ -1075,17 +1088,33 @@ export function LanguageLab({
             <aside className="border-t border-ink/10 bg-paper/40 p-5 xl:border-l xl:border-t-0">
               <div className="space-y-4">
                 <div className="rounded-md border border-ink/10 bg-white p-4">
-                  <div className="mb-3 flex items-center gap-2">
-                    <Lightbulb size={18} className="text-saffron" aria-hidden="true" />
-                    <h3 className="font-semibold text-ink">Tutor Notes</h3>
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <Lightbulb size={18} className="text-saffron" aria-hidden="true" />
+                      <h3 className="font-semibold text-ink">Tutor Notes</h3>
+                    </div>
+                    <button
+                      type="button"
+                      className="flex h-9 shrink-0 items-center gap-2 rounded-md bg-lagoon px-3 text-sm font-medium text-white transition hover:bg-[#176b68] disabled:cursor-not-allowed disabled:opacity-65"
+                      onClick={explainSelection}
+                      onTouchEnd={(event) => {
+                        if (!isExplaining && !isTextGenerationLocked) activateOnTouch(event, explainSelection);
+                      }}
+                      disabled={isExplaining || isTextGenerationLocked}
+                    >
+                      {isExplaining ? <Loader2 size={15} className="animate-spin" /> : <Lightbulb size={15} />}
+                      <span>{isTextGenerationLocked ? "Log in" : "Explain"}</span>
+                    </button>
                   </div>
-                  {explanation ? (
-                    <ExplanationDetails explanation={explanation} selectedText={selectedText} compact />
-                  ) : (
-                    <p className="text-sm text-ink/62">
-                      Select text in the reading, then use the explanation button to get a native-language breakdown.
-                    </p>
-                  )}
+                  <div aria-live="polite">
+                    {explanation ? (
+                      <ExplanationDetails explanation={explanation} selectedText={selectedText} compact />
+                    ) : (
+                      <p className="text-sm text-ink/62">
+                        Select text in the reading, then use Explain to get a native-language breakdown.
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 <div className="rounded-md border border-ink/10 bg-white p-4">
@@ -1127,6 +1156,7 @@ export function LanguageLab({
         </section>
       </div>
     </main>
+    {isReadingModalOpen ? <ReadingModal lesson={lesson} onClose={() => setIsReadingModalOpen(false)} /> : null}
     {upgradePrompt ? <UpgradePromptDialog prompt={upgradePrompt} onClose={clearUpgradePrompt} /> : null}
     </>
   );
@@ -1152,6 +1182,47 @@ function LessonStat({ label, value }: { label: string; value: string | number })
 
 function SectionDivider() {
   return <div className="my-8 h-px w-full bg-ink/10" />;
+}
+
+function ReadingModal({ lesson, onClose }: { lesson: Lesson; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/65 px-4 py-6 backdrop-blur-sm" role="presentation" onClick={onClose}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="focused-reading-title"
+        className="flex max-h-[88vh] w-full max-w-3xl flex-col overflow-hidden rounded-lg border border-ink/10 bg-white shadow-soft"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-4 border-b border-ink/10 p-5">
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-normal text-lagoon">{lesson.targetLanguage}</p>
+            <h2 id="focused-reading-title" className="text-2xl font-semibold leading-tight text-ink">
+              {lesson.title}
+            </h2>
+          </div>
+          <button
+            type="button"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-ink/10 text-ink/55 transition hover:border-coral/40 hover:text-coral"
+            onClick={onClose}
+            aria-label="Close focused reading view"
+          >
+            <X size={17} aria-hidden="true" />
+          </button>
+        </div>
+        <div className="reading-text min-h-0 overflow-y-auto bg-paper/35 p-5 text-[1.08rem] text-ink sm:p-7">
+          {lesson.textSections.map((section) => (
+            <section key={section.heading} className="mb-7 last:mb-0">
+              <h3 className="mb-3 text-base font-semibold text-lagoon">{section.heading}</h3>
+              {section.paragraphs.map((paragraph) => (
+                <p key={paragraph}>{paragraph}</p>
+              ))}
+            </section>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function UpgradePromptDialog({ prompt, onClose }: { prompt: UpgradePrompt; onClose: () => void }) {
