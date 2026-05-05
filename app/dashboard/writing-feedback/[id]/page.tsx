@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { logout } from "@/lib/auth-actions";
+import { AppNavbar } from "@/components/app-navbar";
+import { getCreditSummary } from "@/lib/credits";
 import { type WorkbookFeedback, workbookFeedbackSchema } from "@/lib/schemas";
 import { createClient } from "@/lib/supabase/server";
 
@@ -76,35 +77,20 @@ export default async function WritingFeedbackDetailPage({ params }: WritingFeedb
 
   const criteria = parseCriteria(data.success_criteria);
   const feedback = parseFeedback(data.feedback, data.score);
+  const creditSummary = await getCreditSummary(supabase);
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8">
-      <header className="flex flex-col gap-4 border-b border-ink/10 pb-5 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <Link href="/dashboard/writing-feedback" className="text-sm font-semibold text-lagoon">
-            Writing Feedback
-          </Link>
-          <h1 className="mt-2 text-3xl font-semibold text-ink">{data.title}</h1>
-          <p className="mt-1 text-sm text-ink/62">
-            {data.target_language} | {data.level} | {formatDateTime(data.created_at)}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href="/"
-            className="flex h-10 items-center rounded-md border border-ink/15 px-3 text-sm font-medium text-ink transition hover:border-lagoon/50 hover:text-lagoon"
-          >
-            Generate lesson
-          </Link>
-          <form action={logout}>
-            <button
-              type="submit"
-              className="flex h-10 items-center rounded-md bg-ink px-3 text-sm font-medium text-white transition hover:bg-graphite"
-            >
-              Log out
-            </button>
-          </form>
-        </div>
+      <AppNavbar activeItem="dashboard" userEmail={user.email} creditsRemaining={creditSummary?.remaining ?? null} />
+
+      <header className="border-b border-ink/10 pb-5">
+        <Link href="/dashboard/writing-feedback" className="text-sm font-semibold text-lagoon">
+          Writing Feedback
+        </Link>
+        <h1 className="mt-2 text-3xl font-semibold text-ink">{data.title}</h1>
+        <p className="mt-1 text-sm text-ink/62">
+          {data.target_language} | {data.level} | {formatDateTime(data.created_at)}
+        </p>
       </header>
 
       <section className="grid gap-4 sm:grid-cols-3">

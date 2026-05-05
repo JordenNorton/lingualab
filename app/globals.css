@@ -95,6 +95,83 @@ textarea {
   box-shadow: 0 2px 8px rgba(32, 32, 29, 0.25);
 }
 
+.app-navbar {
+  color: #20201d;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.app-navbar-brand {
+  color: #20201d;
+}
+
+.app-navbar-brand-icon {
+  color: #1f7a77;
+  background: rgba(31, 122, 119, 0.09);
+  border: 1px solid rgba(31, 122, 119, 0.18);
+  box-shadow: 0 0 24px rgba(31, 122, 119, 0.16);
+}
+
+.app-navbar-link,
+.app-navbar-action,
+.app-navbar-profile {
+  color: rgba(32, 32, 29, 0.68);
+  background: transparent;
+  border: 1px solid transparent;
+}
+
+.app-navbar-link:hover,
+.app-navbar-action:hover,
+.app-navbar-profile:hover {
+  color: #20201d;
+  border-color: transparent;
+  background: rgba(31, 122, 119, 0.07);
+}
+
+.app-navbar-link-active {
+  color: #20201d;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.app-navbar-credits {
+  color: #0f4f4d;
+  background: rgba(31, 122, 119, 0.12);
+  border: 1px solid transparent;
+  box-shadow: 0 0 24px rgba(31, 122, 119, 0.12);
+}
+
+.app-navbar-credits:hover {
+  border-color: transparent;
+  background: rgba(31, 122, 119, 0.16);
+}
+
+.app-navbar-avatar {
+  color: #f8f5ef;
+  background: #20201d;
+}
+
+.app-navbar-menu {
+  color: #20201d;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(32, 32, 29, 0.10);
+}
+
+.app-navbar-menu-muted {
+  color: rgba(32, 32, 29, 0.48);
+}
+
+.app-navbar-menu-item {
+  color: rgba(32, 32, 29, 0.72);
+}
+
+.app-navbar-menu-item:hover {
+  color: #20201d;
+  background: rgba(31, 122, 119, 0.08);
+}
+
 .profile-font-small :where(p, span, label, input, textarea, select, button, a, li, h1, h2, h3, h4) {
   font-size: 0.875rem;
 }
@@ -138,6 +215,83 @@ body.profile-theme-dark {
     radial-gradient(circle at 10% 0%, rgba(31, 122, 119, 0.24), transparent 28rem),
     radial-gradient(circle at 90% 8%, rgba(215, 92, 72, 0.15), transparent 26rem),
     linear-gradient(180deg, #101311 0%, #171915 48%, #121411 100%);
+}
+
+.profile-theme-dark .app-navbar {
+  color: #f8f5ef;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.profile-theme-dark .app-navbar-brand {
+  color: #ffffff;
+}
+
+.profile-theme-dark .app-navbar-brand-icon {
+  color: #1f7a77;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.10);
+  box-shadow: 0 0 24px rgba(31, 122, 119, 0.24);
+}
+
+.profile-theme-dark .app-navbar-link,
+.profile-theme-dark .app-navbar-action,
+.profile-theme-dark .app-navbar-profile {
+  color: rgba(248, 245, 239, 0.66);
+  background: transparent;
+  border-color: transparent;
+}
+
+.profile-theme-dark .app-navbar-link:hover,
+.profile-theme-dark .app-navbar-action:hover,
+.profile-theme-dark .app-navbar-profile:hover {
+  color: #ffffff;
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.profile-theme-dark .app-navbar-link-active {
+  color: #ffffff;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.profile-theme-dark .app-navbar-credits {
+  color: #ffffff;
+  background: rgba(31, 122, 119, 0.15);
+  border-color: transparent;
+  box-shadow: 0 0 24px rgba(31, 122, 119, 0.18);
+}
+
+.profile-theme-dark .app-navbar-credits:hover {
+  border-color: transparent;
+  background: rgba(31, 122, 119, 0.20);
+}
+
+.profile-theme-dark .app-navbar-avatar {
+  color: #20201d;
+  background: #f8f5ef;
+}
+
+.profile-theme-dark .app-navbar-menu {
+  color: #f8f5ef;
+  background: #151a16;
+  border-color: rgba(255, 255, 255, 0.10);
+}
+
+.profile-theme-dark .app-navbar-menu-muted {
+  color: rgba(248, 245, 239, 0.48);
+}
+
+.profile-theme-dark .app-navbar-menu-item {
+  color: rgba(248, 245, 239, 0.72);
+}
+
+.profile-theme-dark .app-navbar-menu-item:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .profile-theme-dark [class*="bg-white"] {

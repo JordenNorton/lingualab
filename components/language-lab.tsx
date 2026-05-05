@@ -11,7 +11,6 @@ import {
   Feather,
   GraduationCap,
   History,
-  Languages,
   Lightbulb,
   Loader2,
   MessageSquareText,
@@ -26,6 +25,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { TouchEvent } from "react";
 import { clsx } from "clsx";
+import { AppNavbar } from "@/components/app-navbar";
 import { defaultLessonRequest, demoLesson } from "@/lib/demo-lesson";
 import type { Explanation, Lesson, LessonRequest, QuizAttempt, WorkbookFeedback } from "@/lib/schemas";
 import { contentTypes, focusAreas, languageOptions, lengths, levels, tones } from "@/lib/schemas";
@@ -163,13 +163,15 @@ export function LanguageLab({
   initialLesson,
   initialAttempts,
   initialSavedLessons,
-  initialRequest
+  initialRequest,
+  initialCreditsRemaining
 }: {
   userEmail: string | null;
   initialLesson: Lesson | null;
   initialAttempts: QuizAttempt[];
   initialSavedLessons: SavedLesson[];
   initialRequest?: LessonRequest | null;
+  initialCreditsRemaining?: number | null;
 }) {
   const [request, setRequest] = useState<LessonRequest>(initialRequest ?? defaultLessonRequest);
   const [lesson, setLesson] = useState<Lesson>(initialLesson ?? demoLesson);
@@ -533,54 +535,11 @@ export function LanguageLab({
   return (
     <>
     <main className="mx-auto flex min-h-screen w-full max-w-[1500px] flex-col gap-5 px-4 py-4 sm:px-6 lg:px-8">
-      <header className="flex flex-col gap-4 border-b border-ink/10 pb-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-md bg-ink text-paper">
-            <Languages aria-hidden="true" size={23} />
-          </div>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-normal text-ink">IntoFluency</h1>
-            <p className="text-sm text-ink/65">Generate reading practice, explanations, and workbook drills.</p>
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-2 text-sm">
-          {userEmail ? (
-            <Link
-              href="/dashboard"
-              className="rounded-md border border-ink/10 bg-white/70 px-3 py-2 font-medium text-ink/75 transition hover:border-lagoon/40 hover:text-lagoon"
-            >
-              Dashboard
-            </Link>
-          ) : (
-            <Link
-              href="/login"
-              className="rounded-md border border-ink/10 bg-white/70 px-3 py-2 font-medium text-ink/75 transition hover:border-lagoon/40 hover:text-lagoon"
-            >
-              Log in
-            </Link>
-          )}
-          <Link
-            href="/pricing"
-            className="rounded-md border border-ink/10 bg-white/70 px-3 py-2 font-medium text-ink/75 transition hover:border-lagoon/40 hover:text-lagoon"
-          >
-            Plans
-          </Link>
-          <span className="rounded-md border border-ink/10 bg-white/70 px-3 py-2 text-ink/75">
-            {meta.mode === "ai" ? `AI mode ${meta.model ? `| ${meta.model}` : ""}` : "Demo mode"}
-          </span>
-          {meta.credits ? (
-            <Link
-              href="/pricing"
-              className="rounded-md border border-lagoon/20 bg-lagoon/10 px-3 py-2 font-medium text-lagoon transition hover:border-lagoon/45"
-            >
-              {meta.credits.remaining}/{meta.credits.allowance} credits
-            </Link>
-          ) : null}
-          <span className="rounded-md border border-lagoon/20 bg-lagoon/10 px-3 py-2 text-lagoon">
-            Phase 1 build
-          </span>
-        </div>
-      </header>
+      <AppNavbar
+        activeItem="studio"
+        userEmail={userEmail}
+        creditsRemaining={meta.credits?.remaining ?? initialCreditsRemaining ?? null}
+      />
 
       <div className="grid flex-1 gap-5 xl:grid-cols-[400px_minmax(0,1fr)]">
         <aside className="flex flex-col gap-4">
@@ -880,7 +839,7 @@ export function LanguageLab({
             </div>
           ) : null}
 
-          <div className="grid gap-0 2xl:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_320px]">
             <article className="min-w-0 p-5 lg:p-7">
               <div className="mb-6 grid gap-3 sm:grid-cols-3">
                 <LessonStat label="Time" value={`${lesson.estimatedMinutes} min`} />
@@ -1113,8 +1072,8 @@ export function LanguageLab({
               </section>
             </article>
 
-            <aside className="border-t border-ink/10 bg-paper/40 p-5 2xl:border-l 2xl:border-t-0">
-              <div className="sticky top-5 space-y-4">
+            <aside className="border-t border-ink/10 bg-paper/40 p-5 xl:border-l xl:border-t-0">
+              <div className="space-y-4">
                 <div className="rounded-md border border-ink/10 bg-white p-4">
                   <div className="mb-3 flex items-center gap-2">
                     <Lightbulb size={18} className="text-saffron" aria-hidden="true" />

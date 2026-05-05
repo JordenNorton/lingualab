@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { logout } from "@/lib/auth-actions";
+import { AppNavbar } from "@/components/app-navbar";
 import { billingPlans } from "@/lib/billing-plans";
 import { getCreditSummary } from "@/lib/credits";
 import { DashboardBillingActions } from "@/components/dashboard-billing-actions";
@@ -115,43 +115,17 @@ export default async function DashboardPage() {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8">
-      <header className="flex flex-col gap-4 border-b border-ink/10 pb-5 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <Link href="/" className="text-sm font-semibold text-lagoon">
-            IntoFluency
-          </Link>
-          <h1 className="mt-2 text-3xl font-semibold text-ink">Dashboard</h1>
-          <p className="mt-1 text-sm text-ink/62">{user.email}</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href="/"
-            className="flex h-10 items-center rounded-md border border-ink/15 px-3 text-sm font-medium text-ink transition hover:border-lagoon/50 hover:text-lagoon"
-          >
-            Generate lesson
-          </Link>
-          <Link
-            href="/dashboard/settings"
-            className="flex h-10 items-center rounded-md border border-ink/15 px-3 text-sm font-medium text-ink transition hover:border-lagoon/50 hover:text-lagoon"
-          >
-            Settings
-          </Link>
-          <Link
-            href="/pricing"
-            className="flex h-10 items-center rounded-md border border-ink/15 px-3 text-sm font-medium text-ink transition hover:border-lagoon/50 hover:text-lagoon"
-          >
-            Plans
-          </Link>
-          <form action={logout}>
-            <button
-              type="submit"
-              className="flex h-10 items-center rounded-md bg-ink px-3 text-sm font-medium text-white transition hover:bg-graphite"
-            >
-              Log out
-            </button>
-          </form>
-        </div>
-      </header>
+      <AppNavbar
+        activeItem="dashboard"
+        userEmail={user.email}
+        creditsRemaining={creditSummary?.remaining ?? null}
+        showDashboardActions
+      />
+
+      <section className="border-b border-ink/10 pb-5">
+        <h1 className="text-3xl font-semibold text-ink">Dashboard</h1>
+        <p className="mt-1 text-sm text-ink/62">{user.email}</p>
+      </section>
 
       <section className="overflow-hidden rounded-lg border border-ink/10 bg-white shadow-soft">
         <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between">

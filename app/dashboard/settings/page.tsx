@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { logout } from "@/lib/auth-actions";
+import { AppNavbar } from "@/components/app-navbar";
+import { getCreditSummary } from "@/lib/credits";
 import { saveProfileSettings } from "@/lib/profile-actions";
 import {
   getProfileDisplayName,
@@ -52,6 +53,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     .eq("user_id", user.id)
     .maybeSingle<ProfileRow>();
   const profile = serializeProfile(data);
+  const creditSummary = await getCreditSummary(supabase);
   const params = await searchParams;
   const message = firstValue(params.message);
   const displayName = getProfileDisplayName(profile, user.email);
@@ -60,30 +62,11 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8">
-      <header className="flex flex-col gap-4 border-b border-ink/10 pb-5 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <Link href="/dashboard" className="text-sm font-semibold text-lagoon">
-            Dashboard
-          </Link>
-          <h1 className="mt-2 text-3xl font-semibold text-ink">Settings</h1>
-          <p className="mt-1 text-sm text-ink/62">Personalize your IntoFluency workspace.</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href="/"
-            className="flex h-10 items-center rounded-md border border-ink/15 px-3 text-sm font-medium text-ink transition hover:border-lagoon/50 hover:text-lagoon"
-          >
-            Generate lesson
-          </Link>
-          <form action={logout}>
-            <button
-              type="submit"
-              className="flex h-10 items-center rounded-md bg-ink px-3 text-sm font-medium text-white transition hover:bg-graphite"
-            >
-              Log out
-            </button>
-          </form>
-        </div>
+      <AppNavbar activeItem="dashboard" userEmail={user.email} creditsRemaining={creditSummary?.remaining ?? null} />
+
+      <header className="border-b border-ink/10 pb-5">
+        <h1 className="text-3xl font-semibold text-ink">Settings</h1>
+        <p className="mt-1 text-sm text-ink/62">Personalize your IntoFluency workspace.</p>
       </header>
 
       {message ? <p className="rounded-md border border-lagoon/20 bg-lagoon/10 px-4 py-3 text-sm font-semibold text-lagoon">{message}</p> : null}

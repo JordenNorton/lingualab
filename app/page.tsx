@@ -1,4 +1,5 @@
 import { LanguageLab } from "@/components/language-lab";
+import { getCreditSummary } from "@/lib/credits";
 import { defaultLessonRequest } from "@/lib/demo-lesson";
 import { profileSelect, serializeProfile, type ProfileRow } from "@/lib/profile";
 import { lessonSchema, quizAttemptSchema, type LessonRequest, type QuizAttempt } from "@/lib/schemas";
@@ -68,6 +69,7 @@ export default async function Home({ searchParams }: HomePageProps) {
   let initialAttempts: QuizAttempt[] = [];
   let initialSavedLessons: SavedLessonPreview[] = [];
   let initialRequest: LessonRequest = defaultLessonRequest;
+  let initialCreditsRemaining: number | null = null;
 
   if (user && savedLessonId) {
     const { data } = await supabase
@@ -82,6 +84,9 @@ export default async function Home({ searchParams }: HomePageProps) {
   }
 
   if (user) {
+    const creditSummary = await getCreditSummary(supabase);
+    initialCreditsRemaining = creditSummary?.remaining ?? null;
+
     const { data: profileData } = await supabase
       .from("profiles")
       .select(profileSelect)
@@ -136,6 +141,7 @@ export default async function Home({ searchParams }: HomePageProps) {
       initialAttempts={initialAttempts}
       initialSavedLessons={initialSavedLessons}
       initialRequest={initialRequest}
+      initialCreditsRemaining={initialCreditsRemaining}
     />
   );
 }

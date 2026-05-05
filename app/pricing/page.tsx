@@ -1,6 +1,6 @@
 import { CheckCircle2 } from "lucide-react";
-import Link from "next/link";
 import type { ReactNode } from "react";
+import { AppNavbar } from "@/components/app-navbar";
 import { billingPlanIds, billingPlans } from "@/lib/billing-plans";
 import { PricingPlanAction } from "@/components/pricing-plan-action";
 import { getCreditSummary } from "@/lib/credits";
@@ -21,24 +21,13 @@ export default async function PricingPage({
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-7 px-4 py-5 sm:px-6 lg:px-8">
-      <header className="flex flex-col gap-4 border-b border-ink/10 pb-5 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <Link href="/" className="text-sm font-semibold text-lagoon">
-            IntoFluency
-          </Link>
-          <h1 className="mt-2 text-3xl font-semibold text-ink">Plans</h1>
-          <p className="mt-2 max-w-2xl text-sm text-ink/62">
-            Choose the monthly lesson allowance that fits your study rhythm. Credits reset each month and unused credits do not roll over.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href={user ? "/dashboard" : "/login"}
-            className="flex h-10 items-center rounded-md border border-ink/15 px-3 text-sm font-medium text-ink transition hover:border-lagoon/50 hover:text-lagoon"
-          >
-            {user ? "Dashboard" : "Log in"}
-          </Link>
-        </div>
+      <AppNavbar userEmail={user?.email ?? null} creditsRemaining={creditSummary?.remaining ?? null} />
+
+      <header className="border-b border-ink/10 pb-5">
+        <h1 className="text-3xl font-semibold text-ink">Plans</h1>
+        <p className="mt-2 max-w-2xl text-sm text-ink/62">
+          Choose the monthly lesson allowance that fits your study rhythm. Credits reset each month and unused credits do not roll over.
+        </p>
       </header>
 
       {params.billing === "portal-update-setup" ? (
