@@ -36,10 +36,18 @@ export default async function RootLayout({
 }>) {
   const profile = await getLayoutProfile();
   const profileClassName = getProfileClassName(profile);
+  const year = new Date().getFullYear();
 
   return (
     <html lang="en" className={profileClassName}>
-      <body className={profileClassName}>{children}</body>
+      <body className={profileClassName}>
+        {children}
+        <footer className="mx-auto w-full max-w-[1500px] px-4 pb-6 pt-2 text-center text-xs text-ink/45 sm:px-6 lg:px-8">
+          <div className="border-t border-ink/10 pt-4">
+            Copyright &copy; {year} Jorden Norton
+          </div>
+        </footer>
+      </body>
     </html>
   );
 }
