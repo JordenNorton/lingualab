@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "LinguaLab",
+  title: "IntoFluency",
   description: "AI-generated reading practice, explanations, and workbook drills for language learners."
 };
 

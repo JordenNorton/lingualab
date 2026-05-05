@@ -132,6 +132,7 @@ export const lessonSchema = z.object({
 });
 
 export const explanationRequestSchema = z.object({
+  lessonId: z.string().min(1).max(160),
   selectedText: z.string().min(1).max(1200),
   targetLanguage: z.string().min(2).max(60),
   nativeLanguage: z.string().min(2).max(60),

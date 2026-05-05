@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  CircleAlert,
   BookOpen,
   Brain,
   BriefcaseBusiness,
@@ -18,7 +19,8 @@ import {
   PenLine,
   Save,
   Sparkles,
-  Wand2
+  Wand2,
+  X
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -28,8 +30,10 @@ import { defaultLessonRequest, demoLesson } from "@/lib/demo-lesson";
 import type { Explanation, Lesson, LessonRequest, QuizAttempt, WorkbookFeedback } from "@/lib/schemas";
 import { contentTypes, focusAreas, languageOptions, lengths, levels, tones } from "@/lib/schemas";
 
-const savedLessonsKey = "lingualab.savedLessons.v1";
-const attemptsKey = "lingualab.attempts.v1";
+const legacySavedLessonsKey = "lingualab.savedLessons.v1";
+const legacyAttemptsKey = "lingualab.attempts.v1";
+const savedLessonsKey = "intofluency.savedLessons.v1";
+const attemptsKey = "intofluency.attempts.v1";
 const loginToGenerateMessage = "Log in or create an account to generate new text.";
 
 const contentLabels: Record<LessonRequest["contentType"], string> = {
@@ -85,6 +89,23 @@ type ApiMeta = {
   mode?: "ai" | "demo";
   message?: string;
   model?: string;
+  credits?: {
+    plan: string;
+    remaining: number;
+    allowance: number;
+    resetAt: string;
+  };
+  explanations?: {
+    includedUsed: number;
+    includedLimit: number;
+    chargedCredits: number;
+    extraCreditCount: number;
+  };
+};
+
+type UpgradePrompt = {
+  message: string;
+  href: string;
 };
 
 function normalizeAnswer(value: string) {
@@ -105,6 +126,19 @@ function readLocalStorage<T>(key: string, fallback: T): T {
   } catch {
     return fallback;
   }
+}
+
+function readMigratedLocalStorage<T>(key: string, legacyKey: string, fallback: T): T {
+  const current = readLocalStorage<T | null>(key, null);
+  if (current !== null) return current;
+
+  const legacy = readLocalStorage<T | null>(legacyKey, null);
+  if (legacy !== null) {
+    writeLocalStorage(key, legacy);
+    return legacy;
+  }
+
+  return fallback;
 }
 
 function writeLocalStorage<T>(key: string, value: T) {
@@ -147,6 +181,7 @@ export function LanguageLab({
   const [isSavingLesson, setIsSavingLesson] = useState(false);
   const [isSavingAttempt, setIsSavingAttempt] = useState(false);
   const [status, setStatus] = useState("");
+  const [upgradePrompt, setUpgradePrompt] = useState<UpgradePrompt | null>(null);
   const [savedLessons, setSavedLessons] = useState<SavedLesson[]>(userEmail ? initialSavedLessons : []);
   const [attempts, setAttempts] = useState<QuizAttempt[]>(userEmail ? initialAttempts : []);
   const [mcAnswers, setMcAnswers] = useState<Record<string, number>>({});
@@ -168,8 +203,8 @@ export function LanguageLab({
     const timer = window.setTimeout(() => {
       if (!isMounted) return;
 
-      setSavedLessons(readLocalStorage<SavedLesson[]>(savedLessonsKey, []));
-      setAttempts(readLocalStorage<QuizAttempt[]>(attemptsKey, []));
+      setSavedLessons(readMigratedLocalStorage<SavedLesson[]>(savedLessonsKey, legacySavedLessonsKey, []));
+      setAttempts(readMigratedLocalStorage<QuizAttempt[]>(attemptsKey, legacyAttemptsKey, []));
     }, 0);
 
     return () => {
@@ -235,19 +270,26 @@ export function LanguageLab({
     setFeedback(null);
   }
 
+  function clearUpgradePrompt() {
+    setUpgradePrompt(null);
+  }
+
   async function generateLesson() {
     if (!userEmail) {
+      clearUpgradePrompt();
       setStatus(loginToGenerateMessage);
       return;
     }
 
     if (!request.topic.trim()) {
+      clearUpgradePrompt();
       setStatus("Add a topic or interest before generating a lesson.");
       return;
     }
 
     setIsGenerating(true);
     setStatus("");
+    clearUpgradePrompt();
 
     try {
       const response = await fetch("/api/generate-lesson", {
@@ -255,10 +297,12 @@ export function LanguageLab({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(request)
       });
-      const data = (await response.json()) as { lesson?: Lesson; meta?: ApiMeta; error?: string };
+      const data = (await response.json()) as { lesson?: Lesson; meta?: ApiMeta; error?: string; upgradeUrl?: string };
 
       if (!response.ok || !data.lesson) {
-        throw new Error(data.error || "The lesson could not be generated.");
+        const message = data.error || "The lesson could not be generated.";
+        if (data.upgradeUrl) setUpgradePrompt({ message, href: data.upgradeUrl });
+        throw new Error(message);
       }
 
       resetLessonState(data.lesson);
@@ -272,6 +316,8 @@ export function LanguageLab({
   }
 
   async function saveLesson() {
+    clearUpgradePrompt();
+
     if (!userEmail) {
       const next: SavedLesson[] = [
         {
@@ -318,6 +364,7 @@ export function LanguageLab({
   }
 
   function loadSavedLesson(savedLesson: SavedLesson) {
+    clearUpgradePrompt();
     resetLessonState(savedLesson.lesson);
     setMeta({
       mode: "demo",
@@ -328,6 +375,7 @@ export function LanguageLab({
 
   async function explainSelection() {
     if (!userEmail) {
+      clearUpgradePrompt();
       setStatus(loginToGenerateMessage);
       return;
     }
@@ -335,6 +383,7 @@ export function LanguageLab({
     const selection = window.getSelection()?.toString().trim() || selectedText;
 
     if (!selection) {
+      clearUpgradePrompt();
       setStatus("Select a word, phrase, or sentence in the reading first.");
       return;
     }
@@ -342,12 +391,14 @@ export function LanguageLab({
     setSelectedText(selection);
     setIsExplaining(true);
     setStatus("");
+    clearUpgradePrompt();
 
     try {
       const response = await fetch("/api/explain", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          lessonId: lesson.id,
           selectedText: selection.slice(0, 1200),
           targetLanguage: lesson.targetLanguage,
           nativeLanguage: lesson.nativeLanguage,
@@ -355,13 +406,21 @@ export function LanguageLab({
           surroundingText: readingText.slice(0, 2400)
         })
       });
-      const data = (await response.json()) as { explanation?: Explanation; meta?: ApiMeta; error?: string };
+      const data = (await response.json()) as { explanation?: Explanation; meta?: ApiMeta; error?: string; upgradeUrl?: string };
 
       if (!response.ok || !data.explanation) {
-        throw new Error(data.error || "That selection could not be explained.");
+        const message = data.error || "That selection could not be explained.";
+        if (data.upgradeUrl) setUpgradePrompt({ message, href: data.upgradeUrl });
+        throw new Error(message);
       }
 
       setExplanation(data.explanation);
+      if (data.meta?.credits) {
+        setMeta((current) => ({
+          ...current,
+          credits: data.meta?.credits
+        }));
+      }
       setStatus(data.meta?.message || "Explanation ready.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Unable to explain that selection.");
@@ -371,6 +430,8 @@ export function LanguageLab({
   }
 
   async function submitQuiz() {
+    clearUpgradePrompt();
+
     if (isDuplicateQuizAttempt) {
       setStatus("This score is already saved. Change an answer to save another attempt.");
       return;
@@ -424,6 +485,8 @@ export function LanguageLab({
   }
 
   async function checkWriting() {
+    clearUpgradePrompt();
+
     if (!userEmail) {
       setStatus(loginToGenerateMessage);
       return;
@@ -468,6 +531,7 @@ export function LanguageLab({
   }
 
   return (
+    <>
     <main className="mx-auto flex min-h-screen w-full max-w-[1500px] flex-col gap-5 px-4 py-4 sm:px-6 lg:px-8">
       <header className="flex flex-col gap-4 border-b border-ink/10 pb-4 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-3">
@@ -475,7 +539,7 @@ export function LanguageLab({
             <Languages aria-hidden="true" size={23} />
           </div>
           <div>
-            <h1 className="text-2xl font-semibold tracking-normal text-ink">LinguaLab</h1>
+            <h1 className="text-2xl font-semibold tracking-normal text-ink">IntoFluency</h1>
             <p className="text-sm text-ink/65">Generate reading practice, explanations, and workbook drills.</p>
           </div>
         </div>
@@ -495,9 +559,23 @@ export function LanguageLab({
               Log in
             </Link>
           )}
+          <Link
+            href="/pricing"
+            className="rounded-md border border-ink/10 bg-white/70 px-3 py-2 font-medium text-ink/75 transition hover:border-lagoon/40 hover:text-lagoon"
+          >
+            Plans
+          </Link>
           <span className="rounded-md border border-ink/10 bg-white/70 px-3 py-2 text-ink/75">
             {meta.mode === "ai" ? `AI mode ${meta.model ? `| ${meta.model}` : ""}` : "Demo mode"}
           </span>
+          {meta.credits ? (
+            <Link
+              href="/pricing"
+              className="rounded-md border border-lagoon/20 bg-lagoon/10 px-3 py-2 font-medium text-lagoon transition hover:border-lagoon/45"
+            >
+              {meta.credits.remaining}/{meta.credits.allowance} credits
+            </Link>
+          ) : null}
           <span className="rounded-md border border-lagoon/20 bg-lagoon/10 px-3 py-2 text-lagoon">
             Phase 1 build
           </span>
@@ -699,7 +777,11 @@ export function LanguageLab({
                 {isGenerating ? <Loader2 size={18} className="animate-spin" /> : <Wand2 size={18} />}
                 {isGenerating ? "Generating lesson" : isTextGenerationLocked ? "Log in to generate" : "Generate lesson"}
               </button>
-              {status ? <p className="rounded-md bg-paper px-3 py-2 text-sm text-ink/70">{status}</p> : null}
+              {status ? (
+                <div className="rounded-md bg-paper px-3 py-2 text-sm text-ink/70">
+                  <p>{status}</p>
+                </div>
+              ) : null}
             </div>
           </section>
 
@@ -1086,6 +1168,8 @@ export function LanguageLab({
         </section>
       </div>
     </main>
+    {upgradePrompt ? <UpgradePromptDialog prompt={upgradePrompt} onClose={clearUpgradePrompt} /> : null}
+    </>
   );
 }
 
@@ -1109,6 +1193,64 @@ function LessonStat({ label, value }: { label: string; value: string | number })
 
 function SectionDivider() {
   return <div className="my-8 h-px w-full bg-ink/10" />;
+}
+
+function UpgradePromptDialog({ prompt, onClose }: { prompt: UpgradePrompt; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/55 px-4 py-6" role="presentation" onClick={onClose}>
+      <div
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="credit-limit-title"
+        aria-describedby="credit-limit-description"
+        className="w-full max-w-md rounded-lg border border-ink/10 bg-white p-5 shadow-soft"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-coral/10 text-coral">
+              <CircleAlert size={21} aria-hidden="true" />
+            </span>
+            <div>
+              <h2 id="credit-limit-title" className="text-xl font-semibold text-ink">
+                Credit limit reached
+              </h2>
+              <p id="credit-limit-description" className="mt-2 text-sm leading-6 text-ink/68">
+                {prompt.message}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-ink/10 text-ink/55 transition hover:border-coral/40 hover:text-coral"
+            onClick={onClose}
+            aria-label="Close credit limit message"
+          >
+            <X size={17} aria-hidden="true" />
+          </button>
+        </div>
+        <div className="mt-5 rounded-md bg-paper p-3 text-sm text-ink/65">
+          Choose a plan to keep generating lessons, or wait until your monthly credits reset.
+        </div>
+        <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            className="flex h-10 items-center justify-center rounded-md border border-ink/15 px-3 text-sm font-semibold text-ink transition hover:border-lagoon/50 hover:text-lagoon"
+            onClick={onClose}
+          >
+            Not now
+          </button>
+          <Link
+            href={prompt.href}
+            className="flex h-10 items-center justify-center rounded-md bg-ink px-4 text-sm font-semibold text-white transition hover:bg-graphite"
+            onClick={onClose}
+          >
+            View plans
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function TutorNote({ label, value }: { label: string; value: string }) {

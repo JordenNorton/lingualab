@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { logout } from "@/lib/auth-actions";
+import { billingPlans } from "@/lib/billing-plans";
+import { getCreditSummary } from "@/lib/credits";
+import { DashboardBillingActions } from "@/components/dashboard-billing-actions";
 import {
   getProfileDisplayName,
   getProfileInitials,
@@ -58,6 +61,7 @@ export default async function DashboardPage() {
     .select(profileSelect)
     .eq("user_id", user.id)
     .maybeSingle<ProfileRow>();
+  const creditSummary = await getCreditSummary(supabase);
 
   const {
     data: lessons,
@@ -114,7 +118,7 @@ export default async function DashboardPage() {
       <header className="flex flex-col gap-4 border-b border-ink/10 pb-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <Link href="/" className="text-sm font-semibold text-lagoon">
-            LinguaLab
+            IntoFluency
           </Link>
           <h1 className="mt-2 text-3xl font-semibold text-ink">Dashboard</h1>
           <p className="mt-1 text-sm text-ink/62">{user.email}</p>
@@ -131,6 +135,12 @@ export default async function DashboardPage() {
             className="flex h-10 items-center rounded-md border border-ink/15 px-3 text-sm font-medium text-ink transition hover:border-lagoon/50 hover:text-lagoon"
           >
             Settings
+          </Link>
+          <Link
+            href="/pricing"
+            className="flex h-10 items-center rounded-md border border-ink/15 px-3 text-sm font-medium text-ink transition hover:border-lagoon/50 hover:text-lagoon"
+          >
+            Plans
           </Link>
           <form action={logout}>
             <button
@@ -164,6 +174,29 @@ export default async function DashboardPage() {
               Edit profile
             </Link>
           </div>
+        </div>
+      </section>
+
+      <section className="rounded-lg border border-ink/10 bg-white p-5 shadow-soft">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-normal text-lagoon">Lesson credits</p>
+            <h2 className="mt-1 text-2xl font-semibold text-ink">
+              {creditSummary ? `${formatPlanName(creditSummary.plan)} plan` : "Plan unavailable"}
+            </h2>
+            <p className="mt-2 text-sm text-ink/62">
+              {creditSummary
+                ? `${creditSummary.remaining} of ${creditSummary.allowance} credits left. Resets ${formatDate(creditSummary.resetAt)}.`
+                : "Your lesson credits could not be loaded right now."}
+            </p>
+            {creditSummary ? (
+              <p className="mt-1 text-xs font-medium text-ink/48">
+                Billing status: {formatBillingStatus(creditSummary.billingStatus)}
+                {creditSummary.cancelAtPeriodEnd ? " | Cancels at renewal" : ""}
+              </p>
+            ) : null}
+          </div>
+          <DashboardBillingActions hasStripeCustomer={Boolean(creditSummary?.stripeCustomerId)} />
         </div>
       </section>
 
@@ -269,6 +302,17 @@ function formatDate(value: string) {
     month: "short",
     year: "numeric"
   }).format(new Date(value));
+}
+
+function formatPlanName(planId: string) {
+  return billingPlans[planId as keyof typeof billingPlans]?.name ?? "Free";
+}
+
+function formatBillingStatus(value: string) {
+  return value
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 function DashboardMetric({ label, value }: { label: string; value: string }) {

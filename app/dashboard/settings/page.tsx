@@ -66,7 +66,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
             Dashboard
           </Link>
           <h1 className="mt-2 text-3xl font-semibold text-ink">Settings</h1>
-          <p className="mt-1 text-sm text-ink/62">Personalize your LinguaLab workspace.</p>
+          <p className="mt-1 text-sm text-ink/62">Personalize your IntoFluency workspace.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Link

@@ -4,7 +4,7 @@ import { explanationJsonSchema } from "@/lib/json-schemas";
 import { createOpenAIClient, getOpenAIModel, hasOpenAIKey, parseResponseJson, reasoningForModel } from "@/lib/openai";
 import { buildExplanationInstructions } from "@/lib/prompts";
 import { explanationRequestSchema, explanationSchema } from "@/lib/schemas";
-import { recordUsageEvent } from "@/lib/usage-limits";
+import { recordExplanationCreditUsage, refundExplanationUsage } from "@/lib/credits";
 
 export const runtime = "nodejs";
 
@@ -25,8 +25,8 @@ export async function POST(request: Request) {
     );
   }
 
-  const usage = await recordUsageEvent(auth.supabase, "explanation");
-  if (!usage.allowed) return usage.response;
+  const credit = await recordExplanationCreditUsage(auth.supabase, parsed.data.lessonId);
+  if (!credit.allowed) return credit.response;
 
   if (!hasOpenAIKey()) {
     return Response.json({
@@ -34,10 +34,12 @@ export async function POST(request: Request) {
       meta: {
         mode: "demo",
         message: "Set OPENAI_API_KEY to enable live explanations.",
-        usage: {
-          remaining: usage.remaining,
-          limit: usage.limit,
-          resetAt: usage.resetAt
+        credits: credit.credits,
+        explanations: {
+          includedUsed: credit.includedUsed,
+          includedLimit: credit.includedLimit,
+          chargedCredits: credit.chargedCredits,
+          extraCreditCount: credit.extraCreditCount
         }
       }
     });
@@ -76,14 +78,17 @@ export async function POST(request: Request) {
       meta: {
         mode: "ai",
         model,
-        usage: {
-          remaining: usage.remaining,
-          limit: usage.limit,
-          resetAt: usage.resetAt
+        credits: credit.credits,
+        explanations: {
+          includedUsed: credit.includedUsed,
+          includedLimit: credit.includedLimit,
+          chargedCredits: credit.chargedCredits,
+          extraCreditCount: credit.extraCreditCount
         }
       }
     });
   } catch (error) {
+    await refundExplanationUsage(auth.supabase, parsed.data.lessonId, credit.chargedCredits);
     const message = error instanceof Error ? error.message : "Unable to explain that text.";
 
     return Response.json(

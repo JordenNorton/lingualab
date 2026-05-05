@@ -1,5 +1,5 @@
 {
-  "name": "language-learning-assistant",
+  "name": "intofluency",
   "version": "0.1.0",
   "private": true,
   "engines": {
@@ -21,6 +21,7 @@
     "openai": "^6.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "stripe": "^22.1.0",
     "zod": "^4.0.0"
   },
   "devDependencies": {

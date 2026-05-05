@@ -26,7 +26,7 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
     <main className="flex min-h-screen items-center justify-center px-4 py-8">
       <section className="w-full max-w-lg rounded-lg border border-ink/10 bg-white p-6 shadow-soft">
         <Link href="/" className="mb-6 inline-flex text-sm font-semibold text-lagoon">
-          LinguaLab
+          IntoFluency
         </Link>
         <h1 className="text-2xl font-semibold text-ink">Create an account</h1>
         <p className="mt-2 text-sm text-ink/62">Start saving lessons and building your learning history.</p>

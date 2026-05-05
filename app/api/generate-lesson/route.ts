@@ -4,7 +4,7 @@ import { lessonResponseJsonSchema } from "@/lib/json-schemas";
 import { createOpenAIClient, getOpenAIModel, hasOpenAIKey, parseResponseJson, reasoningForModel } from "@/lib/openai";
 import { buildLessonInstructions, buildLessonPrompt } from "@/lib/prompts";
 import { lessonRequestSchema, lessonSchema } from "@/lib/schemas";
-import { recordUsageEvent } from "@/lib/usage-limits";
+import { consumeLessonCredit, refundLessonCredit } from "@/lib/credits";
 
 export const runtime = "nodejs";
 
@@ -25,20 +25,23 @@ export async function POST(request: Request) {
     );
   }
 
-  const usage = await recordUsageEvent(auth.supabase, "lesson_generation");
-  if (!usage.allowed) return usage.response;
+  const lessonKey = crypto.randomUUID();
+  const credit = await consumeLessonCredit(auth.supabase, lessonKey);
+  if (!credit.allowed) return credit.response;
 
   if (!hasOpenAIKey()) {
+    const lesson = {
+      ...createDemoLesson(parsed.data),
+      id: lessonKey,
+      createdAt: new Date().toISOString()
+    };
+
     return Response.json({
-      lesson: createDemoLesson(parsed.data),
+      lesson,
       meta: {
         mode: "demo",
         message: "Set OPENAI_API_KEY to generate live lessons.",
-        usage: {
-          remaining: usage.remaining,
-          limit: usage.limit,
-          resetAt: usage.resetAt
-        }
+        credits: credit.credits
       }
     });
   }
@@ -62,23 +65,25 @@ export async function POST(request: Request) {
       }
     });
 
-    const lesson = lessonSchema.parse(
+    const parsedLesson = lessonSchema.parse(
       parseResponseJson<unknown>(response.output_text, "The model returned a lesson that was not valid JSON.")
     );
+    const lesson = {
+      ...parsedLesson,
+      id: lessonKey,
+      createdAt: new Date().toISOString()
+    };
 
     return Response.json({
       lesson,
       meta: {
         mode: "ai",
         model,
-        usage: {
-          remaining: usage.remaining,
-          limit: usage.limit,
-          resetAt: usage.resetAt
-        }
+        credits: credit.credits
       }
     });
   } catch (error) {
+    await refundLessonCredit(auth.supabase, lessonKey);
     const message = error instanceof Error ? error.message : "Unable to generate a lesson.";
 
     return Response.json(
